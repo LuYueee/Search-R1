@@ -1,10 +1,20 @@
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export DATA_DIR='data/nq_search'
-
 WAND_PROJECT='Search-R1'
+# 组合使用这些技术可减少40-60%显存
+export ENABLE_FLASH_ATTN=1  # 启用FlashAttention-2
+export XFORMERS_FORCE_DISABLE_TRITON=0  # 启用Triton优化
+export TRANSFORMERS_OFFLINE=1
+export HF_HUB_OFFLINE=1
+export WANDB_MODE=offline
+export RAY_memory_monitor_refresh_ms=0  # 保持禁用Ray内存监控
+export RAY_memory_usage_threshold=0.95  # 设置更高内存阈值
+export HYDRA_FULL_ERROR=1
+export BASE_MODEL=/home/jovyan/work_vol90/RL+RAG/Search-R1-main/models/qwen2.5-3b-instruct
+export EXPERIMENT_NAME=nq-search-r1-ppo-qwen2.5-3b-it-em
 
-export BASE_MODEL='meta-llama/Llama-3.2-3B'
-export EXPERIMENT_NAME=nq-search-r1-ppo-llama3.2-3b-em
+#export BASE_MODEL='/home/jovyan/work_vol90/Llama3/llama3-8b-instruct'
+#export EXPERIMENT_NAME=nq-search-r1-ppo-llama3-8b-em
 # export BASE_MODEL='meta-llama/Llama-3.2-3B-Instruct'
 # export EXPERIMENT_NAME=nq-search-r1-ppo-llama3.2-3b-it-em
 # export BASE_MODEL='meta-llama/Llama-3.1-8B'
@@ -24,7 +34,7 @@ export EXPERIMENT_NAME=nq-search-r1-ppo-llama3.2-3b-em
 # set -x
 export VLLM_ATTENTION_BACKEND=XFORMERS # vllm + qwen2-7b with flash_attn has some issues
 
-# max_prompt_length = (config['training']['max_start_length'] + config['training']['max_response_length'] * (config['training']['max_turns'] - 1) + config['training']['max_obs_length'] * config['training']['max_turns'])
+#max_prompt_length = (config['training']['max_start_length'] + config['training']['max_response_length'] * (config['training']['max_turns'] - 1) + config['training']['max_obs_length'] * config['training']['max_turns'])
 
 PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     data.train_files=$DATA_DIR/train.parquet \
