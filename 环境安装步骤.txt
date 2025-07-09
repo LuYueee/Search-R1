@@ -1,0 +1,60 @@
+1. 首先升级cuda（不选择装driver）:
+sudo sh /home/jovyan/work_vol90/RL+RAG/cuda_12.1.0_530.30.02_linux.run
+# 临时生效
+export PATH=/usr/local/cuda-12.1/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH
+
+# 永久生效（推荐写入 ~/.bashrc 或 /etc/profile）
+echo 'export PATH=/usr/local/cuda-12.1/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+#########################################################
+2. 安装Search-R1环境
+conda create -n searchr1 python=3.9
+conda activate searchr1
+# install torch [or you can skip this step and let vllm to install the correct version for you]
+pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+# install vllm
+pip3 install vllm==0.6.3 # or you can install 0.5.4, 0.4.2 and 0.3.1
+
+# verl
+pip install -e .
+
+# flash attention 2
+pip3 install flash-attn --no-build-isolation
+pip install wandb
+
+pip install -r requirements.txt
+pip3 install nvidia-cublas-cu12==12.3.4.1 
+
+#########################################################
+3. 安装Retriever环境
+conda create -n retriever python=3.10
+conda activate retriever
+
+# we recommend installing torch with conda for faiss-gpu
+conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 pytorch-cuda=12.1 -c pytorch -c nvidia
+pip install transformers datasets pyserini
+
+## install the gpu version faiss to guarantee efficient RL rollout
+conda install -c pytorch -c nvidia faiss-gpu=1.8.0
+
+## API function
+pip install uvicorn fastapi
+
+# we recommend installing torch with conda for faiss-gpu
+pip install torchaudio==2.4.0 
+conda install pytorch==2.4.0=cuda120_py310h2c91c31_301 \
+             torchvision==0.19.0=cuda120py310h8d5198f_0 \
+             -c conda-forge
+pip install transformers datasets pyserini
+## API function
+pip install uvicorn fastapi
+pip install -r requirements.txt
+
+## install the gpu version faiss to guarantee efficient RL rollout
+pip install /home/jovyan/work_vol90/RL+RAG/faiss_gpu-1.7.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+
+
+
