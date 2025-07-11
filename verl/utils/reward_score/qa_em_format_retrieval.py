@@ -122,18 +122,8 @@ def is_valid_sequence(text):
 
 
 def extract_solution(solution_str):
-    """Extract the equation from the solution string."""
-
-    answer_pattern = r'<answer>(.*?)</answer>'
-    match = re.finditer(answer_pattern, solution_str, re.DOTALL)
-    matches = list(match)
-    
-    # If there are 0 or exactly 1 matches, return None
-    if len(matches) <= 1:
-        return None
-    
-    # If there are 2 or more matches, return the last one
-    return matches[-1].group(1).strip()
+    matches = re.findall(r'<answer>(.*?)</answer>', solution_str, re.DOTALL)
+    return matches[-1].strip() if matches else None
 
 
 def extract_information_blocks(text: str) -> list[str]:
@@ -141,57 +131,79 @@ def extract_information_blocks(text: str) -> list[str]:
     matches = re.findall(pattern, text, re.DOTALL)
     return [match.strip() for match in matches]
 
+def count_repeat_information(text: str) -> int:
+    # Count repeated information blocks
+    info_blocks = extract_information_blocks(text)
+    seen = set()
+    repeat_count = 0
+    for block in info_blocks:
+        if block in seen:  # check if exactly match
+            repeat_count += 1
+        else:
+            seen.add(block)
+    return repeat_count
 
-def is_retrieval_correct(text: str, golden_answers: list[str]) -> list[str]:
-    seqs = extract_information_blocks(text)
-    for seq in seqs:
-        for golden_answer in golden_answers:
-            if normalize_answer(golden_answer) in normalize_answer(seq):
-                return True
-    return False
+def count_search_tags(text: str) -> int:
+    """
+    Count the number of complete <search>...</search> blocks in the text.
+    Only fully closed tags are counted.
+    """
+    pattern = r"<search>(.*?)</search>"
+    matches = re.findall(pattern, text, re.DOTALL)
+    return len(matches)
 
-
-def compute_score_em(solution_str, ground_truth, method='strict', structure_format_score=0, final_format_score=0, retrieval_score=0, format_score=0, score=1.):
+def compute_score_em(solution_str, ground_truth, structure_format_score=0, final_format_score=0, lambda_task=2, lambda_search_num=0.1, lambda_repeat_search_num=0.1, score=1.):
     """The scoring function for exact match (EM).
 
     Args:
         solution_str: the solution text
         ground_truth: the ground truth
-        method: the method to extract the solution, choices are 'strict' and 'flexible'
-        format_score: the score for the format
         score: the score for the correct answer
     """
     is_valid_format, _ = is_valid_sequence(solution_str)
-    retrieval_correct = False
-    if is_valid_format:
-        retrieval_correct = is_retrieval_correct(solution_str, ground_truth['target'])
+
     answer = extract_solution(solution_str=solution_str)
+
     do_print = random.randint(1, 64) == 1
-    
+
     if do_print:
         print(f"--------------------------------")
         print(f"Golden answers: {ground_truth['target']}")
         print(f"Extracted answer: {answer}")
         print(f"Solution string: {solution_str}")
-            
+      
+    # 计算base得分
+    final_em_format_score = 0
     if answer is None:
         if is_valid_format:
-            if retrieval_correct:
-                return structure_format_score + retrieval_score # 0.3
-            else:
-                return structure_format_score # 0.2
+            final_em_format_score = structure_format_score
         else:
-            return 0
+            final_em_format_score = 0
     else:
         if em_check(answer, ground_truth['target']):
             if is_valid_format:
-                return score # 1
+                final_em_format_score = score
             else:
-                return score - structure_format_score # 0.8
+                final_em_format_score = score - structure_format_score
         elif is_valid_format:
-            if retrieval_correct:
-                return structure_format_score + retrieval_score # 0.3
-            else:
-                return structure_format_score # 0.2
+            final_em_format_score = structure_format_score
         else:
-            return final_format_score # 0.1
+            final_em_format_score = final_format_score
+    
+    # Rewards for redundant retrieval
+    n_search = count_search_tags(solution_str)
+    n_repeat = count_repeat_information(solution_str)  
+    # Apply penalties and calculate final reward
+    final_score = max(0, lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat)
+    
+    if do_print:
+        print(f"EM Score: {em_check(answer, ground_truth['target'])}")
+        print(f"Format Valid: {is_valid_format}")
+        print(f"Lambda task: {lambda_task}")
+        print(f"Base Reward: {final_em_format_score}")
+        print(f"Lambda search num: {lambda_search_num}")
+        print(f"Search Count: {n_search} (Penalty: -{lambda_search_num * n_search})")
+        print(f"Lambda repeat search num: {lambda_repeat_search_num}")
+        print(f"Repeat Count: {n_repeat} (Penalty: -{lambda_repeat_search_num * n_repeat})")
+        print(f"Final Reward: {final_score}\n")
+    return final_score
