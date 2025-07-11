@@ -1,34 +1,25 @@
-data_name=nq_hotpotqa_train
-
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+data_name=nq_search
 export DATA_DIR=data/${data_name} # first download the data from https://huggingface.co/datasets/PeterJinGo/nq_hotpotqa_train
-
-WAND_PROJECT="Search-R1"
-
-export BASE_MODEL='Qwen/Qwen2.5-3B'
-export EXPERIMENT_NAME=${data_name}-search-r1-grpo-qwen2.5-3b-em-structureformat
-# export BASE_MODEL='Qwen/Qwen2.5-3B-Instruct'
-# export EXPERIMENT_NAME=${data_name}-search-r1-grpo-qwen2.5-3b-it-em-structureformat
-# export BASE_MODEL='Qwen/Qwen2.5-7B'
-# export EXPERIMENT_NAME=${data_name}-search-r1-grpo-qwen2.5-7b-em-structureformat
-# export BASE_MODEL='Qwen/Qwen2.5-7B-Instruct'
-# export EXPERIMENT_NAME=${data_name}-search-r1-grpo-qwen2.5-7b-it-em-structureformat
-# export BASE_MODEL='Qwen/Qwen2.5-14B'
-# export EXPERIMENT_NAME=${data_name}-search-r1-grpo-qwen2.5-14b-em-structureformat
-# export BASE_MODEL='Qwen/Qwen2.5-14B-Instruct'
-# export EXPERIMENT_NAME=${data_name}-search-r1-grpo-qwen2.5-14b-it-em-structureformat
-
-# export BASE_MODEL='deepseek-ai/DeepSeek-R1-Distill-Qwen-7B'
-# export EXPERIMENT_NAME=${data_name}-search-r1-grpo-deepseekr1-7b-em-structureformat
-# export BASE_MODEL='deepseek-ai/DeepSeek-R1-Distill-Qwen-14B'
-# export EXPERIMENT_NAME=${data_name}-search-r1-grpo-deepseekr1-14b-em-structureformat
+WAND_PROJECT='Search-R1-GRPO'
+# 组合使用这些技术可减少40-60%显存
+export ENABLE_FLASH_ATTN=1  # 启用FlashAttention-2
+export XFORMERS_FORCE_DISABLE_TRITON=0  # 启用Triton优化
+export TRANSFORMERS_OFFLINE=1
+export HF_HUB_OFFLINE=1
+export WANDB_MODE=offline
+export RAY_memory_monitor_refresh_ms=0  # 保持禁用Ray内存监控
+export RAY_memory_usage_threshold=0.95  # 设置更高内存阈值
+export HYDRA_FULL_ERROR=1
+export BASE_MODEL=/home/jovyan/work_vol90/RL+RAG/Search-R1-main/models/qwen2.5-3b-instruct
+export EXPERIMENT_NAME=${data_name}-r1-grpo-qwen2.5-3b-it-em-format-retrieval
 
 # set -x
 export VLLM_ATTENTION_BACKEND=XFORMERS # vllm + qwen2-7b with flash_attn has some issues
 
 # max_prompt_length = (config['training']['max_start_length'] + config['training']['max_response_length'] * (config['training']['max_turns'] - 1) + config['training']['max_obs_length'] * config['training']['max_turns'])
 
-PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo_format \
+PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo_format_retrieval \
     data.train_files=$DATA_DIR/train.parquet \
     data.val_files=$DATA_DIR/test.parquet \
     data.train_data_num=null \
@@ -77,11 +68,13 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo_format \
     trainer.total_epochs=15 \
     trainer.total_training_steps=1005 \
     trainer.default_hdfs_dir=null \
-    trainer.default_local_dir=/home/peterjin/verl_checkpoints/$EXPERIMENT_NAME \
+    trainer.default_local_dir=verl_checkpoints/$EXPERIMENT_NAME \
     reward_model.structure_format_score=0.2 \
     reward_model.final_format_score=0.1 \
-    reward_model.retrieval_score=0 \
+    reward_model.lambda_task=2 \
+    reward_model.lambda_search_num=0.2 \
+    reward_model.lambda_repeat_search_num=0.4 \
     max_turns=4 \
     retriever.url="http://127.0.0.1:8000/retrieve" \
     retriever.topk=3 \
-    2>&1 | tee /home/peterjin/rl_logs/$EXPERIMENT_NAME.log
+    2>&1 | tee $EXPERIMENT_NAME.log
