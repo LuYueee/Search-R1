@@ -141,9 +141,12 @@ reward_model:
   ulysses_sequence_parallel_size: 1 # sp size
   use_dynamic_bsz: ${critic.use_dynamic_bsz}
   forward_max_token_len_per_gpu: ${critic.forward_max_token_len_per_gpu}
-  structure_format_score: 0
-  final_format_score: 0
   retrieval_score: 0
+  structure_format_score: 0.2
+  final_format_score: 0.1
+  lambda_task: 2.0
+  lambda_search_num: 0.2
+  lambda_repeat_search_num: 0.4
 
 retriever:
   url: "http://127.0.0.1:8000/retrieve"
