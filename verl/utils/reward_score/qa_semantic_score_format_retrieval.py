@@ -15,6 +15,75 @@
 import re
 import string
 import random
+## for llm discrimination score
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import os, torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.cuda.amp import autocast
+## for F1
+from collections import Counter
+
+
+# 全局变量占位
+_LLM_MODEL = None
+_LLM_TOKENIZER = None
+
+def load_llm_distributed(model_id: str):
+    """
+    在分布式训练中，只有 local_rank==0 的进程真正从磁盘加载，
+    其余进程通过 broadcast_object 拷贝模型和 tokenizer。
+    """
+    global _LLM_MODEL, _LLM_TOKENIZER
+
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    world_size = dist.get_world_size() if dist.is_initialized() else 1
+
+    if local_rank == 0:
+        # Rank 0 加载
+        _LLM_TOKENIZER = AutoTokenizer.from_pretrained(model_id, local_files_only=True)
+        # 让 transformers 自动把模型切到所有可用 GPU 上
+        _LLM_MODEL = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            device_map="auto",        # <= 自动分配到所有可见 GPU
+            offload_folder=None,      # 如需 CPU offload，可配置
+            local_files_only=True
+        )
+        _LLM_MODEL.eval()
+    else:
+        _LLM_TOKENIZER = None
+        _LLM_MODEL = None
+
+    if world_size > 1:
+        dist.barrier()
+
+        # 广播 tokenizer 配置（JSON 串）
+        if local_rank == 0:
+            tok_cfg = _LLM_TOKENIZER.to_json()
+        else:
+            tok_cfg = None
+        tok_cfg = dist.broadcast_object_list([tok_cfg], src=0)[0]
+        if local_rank != 0:
+            from transformers import PreTrainedTokenizerFast
+            _LLM_TOKENIZER = PreTrainedTokenizerFast.from_json(tok_cfg)
+
+        # 广播模型 state_dict
+        if local_rank == 0:
+            state = _LLM_MODEL.state_dict()
+        else:
+            state = None
+        state = dist.broadcast_object_list([state], src=0)[0]
+        if local_rank != 0:
+            _LLM_MODEL = AutoModelForCausalLM.from_pretrained(
+                model_id, state_dict=state, torch_dtype=torch.float16
+            ).to(local_rank).eval()
+
+    # 如果使用 DDP，可包一层
+    if world_size > 1:
+        _LLM_MODEL = DDP(_LLM_MODEL, device_ids=[local_rank])
+
+
 
 def normalize_answer(s):
     def remove_articles(text):
@@ -32,7 +101,6 @@ def normalize_answer(s):
 
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
-
 def em_check(prediction, golden_answers):
     if isinstance(golden_answers, str):
         golden_answers = [golden_answers]
@@ -44,6 +112,117 @@ def em_check(prediction, golden_answers):
             score = 1
             break
     return score
+
+def f1_check(prediction, golden_answers):
+    """
+    Compute the maximum token-level F1 overlap between `prediction` and one or more `golden_answers`.
+    Returns a float in [0.0, 1.0].
+    """
+    # Ensure list of answers
+    if isinstance(golden_answers, str):
+        golden_answers = [golden_answers]
+
+    # Tokenize normalized prediction
+    pred_tokens = normalize_answer(prediction).split()
+    pred_counts = Counter(pred_tokens)
+
+    best_f1 = 0.0
+    for ga in golden_answers:
+        gold_tokens = normalize_answer(ga).split()
+        gold_counts = Counter(gold_tokens)
+
+        # Count common tokens
+        common = pred_counts & gold_counts
+        num_same = sum(common.values())
+        if num_same == 0:
+            f1 = 0.0
+        else:
+            precision = num_same / len(pred_tokens)
+            recall    = num_same / len(gold_tokens)
+            f1        = 2 * precision * recall / (precision + recall)
+        best_f1 = max(best_f1, f1)
+
+    return best_f1
+
+def llm_semantic_check(prediction, golden_answers):
+    """
+    Uses a locally loaded LLM to score the semantic similarity between
+    a candidate prediction and the golden answer, returning a normalized
+    score in [0.0, 1.0].
+    """
+    # Construct the evaluation prompt
+    prompt = (
+        "# Role  \n"
+        "You are an objective evaluator comparing a candidate response to a golden answer.\n\n"
+        "# Instructions  \n"
+        "1. Rate on five dimensions (0–5 integers):  \n"
+        "   - **70%** Semantic Accuracy  \n"
+        "   - **7.5%** Completeness  \n"
+        "   - **7.5%** Logical Coherence  \n"
+        "   - **7.5%** Clarity  \n"
+        "   - **7.5%** Fluency  \n"
+        "2. Compute overall similarity (0–100):  \n"
+        "   overall = (0.70×SA + 0.075×(CMP+LC+CLR+FL)) × 20  \n"
+        "3. **Output only the overall score** No other fields or text or sql statements.\n\n"
+        "# Few-Shot  \n"
+        "Golden: Apple founded by Jobs/Wozniak (1976)  \n"
+        "Candidate: Jobs & Wozniak co‑founded Apple (1976), launching the PC era  \n"
+        "→ `100`  \n\n"
+        "Golden: Atmospheric layers: troposphere/stratosphere/mesosphere/thermosphere/exosphere  \n"
+        "Candidate: Atmosphere: troposphere & stratosphere  \n"
+        "→ `20`  \n\n"
+        "Golden: Deep learning stages: data preprocessing/model design/training/evaluation  \n"
+        "Candidate: DL workflow: data cleaning/network design/training/testing  \n"
+        "→ `100`  \n\n"
+        "Golden: EV benefits: zero emissions/high efficiency/low maintenance  \n"
+        "Candidate: EVs produce no pollutants but require charging networks  \n"
+        "→ `67`  \n\n"
+        "# Evaluation  \n"
+        f"Candidate: {prediction}  \n"
+        f"Golden: {golden_answers}  \n"
+    )
+
+    
+    # 2) 用全局 tokenizer & model 生成
+
+    inputs = _LLM_TOKENIZER(
+        prompt,
+        return_tensors="pt",
+    ).to(_LLM_MODEL.device)
+
+    # 限制输出长度，比如 max_new_tokens=10
+    #outputs = _LLM_MODEL.generate(**inputs, max_new_tokens=10)
+    """
+    with torch.no_grad():
+        outputs = _LLM_MODEL.generate(
+            **inputs,
+            max_new_tokens=10,
+            temperature=0.01,
+            do_sample=True,
+            pad_token_id=_LLM_TOKENIZER.eos_token_id
+        )"""
+    with torch.no_grad():
+        # 使用 greedy decoding，关闭采样与 temperature
+        outputs = _LLM_MODEL.generate(
+        **inputs,
+        max_new_tokens=10,
+        do_sample=False,                # 关闭采样
+        pad_token_id=_LLM_TOKENIZER.eos_token_id,
+    )
+
+    raw = _LLM_TOKENIZER.decode(outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+
+    # 3) 提取数字并清洗
+    m = re.search(r"\d{1,3}", raw)
+    if not m:
+        score100 = 0
+    else:
+        v = int(m.group())
+        score100 = v if 0 <= v <= 100 else 0
+    
+    # 4) 归一化到 0–1
+    semantic_score = score100 / 100.0
+    return semantic_score
 
 
 def is_valid_sequence(text):
@@ -165,14 +344,12 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
     answer = extract_solution(solution_str=solution_str)
 
     do_print = random.randint(1, 64) == 1
-
     if do_print:
         print(f"--------------------------------")
         print(f"Golden answers: {ground_truth['target']}")
         print(f"Extracted answer: {answer}")
         print(f"Solution string: {solution_str}")
-      
-    # 计算base得分
+   
     final_em_format_score = 0
     if answer is None:
         if is_valid_format:
@@ -180,15 +357,23 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
         else:
             final_em_format_score = 0
     else:
-        if em_check(answer, ground_truth['target']):
-            if is_valid_format:
-                final_em_format_score = score
-            else:
-                final_em_format_score = score - structure_format_score
-        elif is_valid_format:
-            final_em_format_score = structure_format_score
-        else:
-            final_em_format_score = final_format_score
+        # semantic_score ∈ [0,1]
+        # is_valid_format ∈ {0,1}
+        # structure_format_score = lambda_f ∈ [0,1]
+        semantic_score = em_check(answer, ground_truth['target'])
+        if not semantic_score:
+            semantic_score = max(f1_check(answer, ground_truth['target']),llm_semantic_check(answer, ground_truth['target']))
+        # 统一公式实现：
+        final_em_format_score = (
+            semantic_score
+            + structure_format_score * (
+                is_valid_format * (1 - semantic_score)
+                - (1 - is_valid_format) * semantic_score
+            )
+        )
+        # 为了防止数值漂移，可再做一次裁剪，确保 0 ≤ score ≤ 1
+        final_em_format_score = max(0.0, min(1.0, final_em_format_score))
+
     
     # Rewards for redundant retrieval
     n_search = count_search_tags(solution_str)
@@ -198,6 +383,8 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
     
     if do_print:
         print(f"EM Score: {em_check(answer, ground_truth['target'])}")
+        print(f"F-1 Score: {f1_check(answer, ground_truth['target'])}")
+        print(f"LLM Semantic Score: {llm_semantic_check(answer, ground_truth['target'])}")
         print(f"Format Valid: {is_valid_format}")
         print(f"Lambda task: {lambda_task}")
         print(f"Base Reward: {final_em_format_score}")
