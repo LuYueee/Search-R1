@@ -14,17 +14,18 @@
 """
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
-
 from verl import DataProto
 import torch
-from verl.utils.reward_score import qa_em_format_retrieval
+from verl.utils.reward_score import qa_semantic_score_format_retrieval
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 import re
 import numpy as np
+## for LLM semantic score
+from verl.utils.reward_score.qa_semantic_score_format_retrieval import load_llm_distributed
 
 def _select_rm_score_fn(data_source):
     if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
-        return qa_em_format_retrieval.compute_score_em
+        return qa_semantic_score_format_retrieval.compute_score_em
     else:
         raise NotImplementedError
 
@@ -139,6 +140,17 @@ def main_task(config):
     # instantiate tokenizer
     from verl.utils import hf_tokenizer
     tokenizer = hf_tokenizer(local_path)
+    
+    ###
+    # Load local llm for semantic score
+    ###
+    # ========== 新增：分布式加载并广播 LLM，只做一次 ==========
+    # model_id 与 load_llm_distributed 中一致
+    model_id = config.reward_model.llm_model_path  
+    # 或者直接硬编码local llm路径
+    #model_id = "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/models/qwen2.5-7b-instruct-1m"
+    load_llm_distributed(model_id)
+    # ========================================================
 
     # define worker classes
     if config.actor_rollout_ref.actor.strategy == 'fsdp':
