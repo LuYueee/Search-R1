@@ -13,7 +13,7 @@ export RAY_memory_monitor_refresh_ms=0  # 保持禁用Ray内存监控
 export RAY_memory_usage_threshold=0.95  # 设置更高内存阈值
 export HYDRA_FULL_ERROR=1
 export BASE_MODEL=/home/jovyan/work_vol90/RL+RAG/Search-R1-main/models/qwen2.5-3b-instruct
-export EXPERIMENT_NAME=${data_name}-r1-ppo-qwen2.5-3b-it-em-semantic-score-format-retrieval
+export EXPERIMENT_NAME=${data_name}-r1-ppo-qwen2.5-3b-it-em-format-retrieval
 
 #export BASE_MODEL='Qwen/Qwen2.5-3B'
 #export EXPERIMENT_NAME=${train_data}-${test_data}-search-r1-ppo-qwen2.5-3b-em-structureformat
@@ -36,7 +36,7 @@ export VLLM_ATTENTION_BACKEND=XFORMERS # vllm + qwen2-7b with flash_attn has som
 
 # max_prompt_length = (config['training']['max_start_length'] + config['training']['max_response_length'] * (config['training']['max_turns'] - 1) + config['training']['max_obs_length'] * config['training']['max_turns'])
 
-PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo_format_retrieval_semantic_score \
+PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo_format_retrieval \
     data.train_files=$DATA_DIR/train.parquet \
     data.val_files=$DATA_DIR/test.parquet \
     data.train_data_num=null \
