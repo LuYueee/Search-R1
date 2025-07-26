@@ -14,17 +14,17 @@
 """
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
-
 from verl import DataProto
 import torch
-from verl.utils.reward_score import qa_em_format_retrieval
+from verl.utils.reward_score import qa_semantic_score_format_retrieval
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 import re
 import numpy as np
 
+
 def _select_rm_score_fn(data_source):
     if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
-        return qa_em_format_retrieval.compute_score_em
+        return qa_semantic_score_format_retrieval.compute_score_em
     else:
         raise NotImplementedError
 
@@ -33,7 +33,7 @@ class RewardManager():
     """The reward manager.
     """
 
-    def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., lambda_task=0., lambda_search_num=0., lambda_repeat_search_num=0.) -> None:
+    def __init__(self, tokenizer, num_examine, model_path, structure_format_score=0., final_format_score=0., lambda_task=0., lambda_search_num=0., lambda_repeat_search_num=0.) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
         self.structure_format_score = structure_format_score
@@ -41,6 +41,7 @@ class RewardManager():
         self.lambda_task = lambda_task
         self.lambda_search_num = lambda_search_num
         self.lambda_repeat_search_num = lambda_repeat_search_num
+        self.model_path = model_path
 
 
     def __call__(self, data: DataProto):
@@ -85,7 +86,8 @@ class RewardManager():
                                         final_format_score=self.final_format_score,
                                         lambda_task=self.lambda_task,
                                         lambda_search_num=self.lambda_search_num, 
-                                        lambda_repeat_search_num=self.lambda_repeat_search_num)
+                                        lambda_repeat_search_num=self.lambda_repeat_search_num,
+                                        model_path=self.model_path )
 
             reward_tensor[i, valid_response_length - 1] = score
             all_scores.append(score)
@@ -139,6 +141,7 @@ def main_task(config):
     # instantiate tokenizer
     from verl.utils import hf_tokenizer
     tokenizer = hf_tokenizer(local_path)
+
 
     # define worker classes
     if config.actor_rollout_ref.actor.strategy == 'fsdp':
@@ -195,7 +198,8 @@ def main_task(config):
                               final_format_score=config.reward_model.final_format_score,
                               lambda_task=config.reward_model.lambda_task,
                               lambda_search_num=config.reward_model.lambda_search_num, 
-                              lambda_repeat_search_num=config.reward_model.lambda_repeat_search_num)
+                              lambda_repeat_search_num=config.reward_model.lambda_repeat_search_num,
+                              model_path=config.reward_model.model_path)
 
     # Note that we always use function-based RM for validation
     val_reward_fn = RewardManager(tokenizer=tokenizer, num_examine=1,
@@ -203,7 +207,8 @@ def main_task(config):
     final_format_score=config.reward_model.final_format_score,
     lambda_task=config.reward_model.lambda_task,
     lambda_search_num=config.reward_model.lambda_search_num, 
-    lambda_repeat_search_num=config.reward_model.lambda_repeat_search_num)
+    lambda_repeat_search_num=config.reward_model.lambda_repeat_search_num,
+    model_path=config.reward_model.model_path)
     
     resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
     trainer = RayPPOTrainer(config=config,
