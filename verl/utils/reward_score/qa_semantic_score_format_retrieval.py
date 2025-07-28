@@ -11,10 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import re
 import string
 import random
+import httpx
+## for F1
+from collections import Counter
+
+# 定义全局 vLLM 服务地址
+LLM_API_URL = "http://127.0.0.1:8001/v1/completions"  # MODIFIED
 
 def normalize_answer(s):
     def remove_articles(text):
@@ -44,6 +49,113 @@ def em_check(prediction, golden_answers):
             score = 1
             break
     return score
+
+
+def f1_check(prediction, golden_answers):
+    """
+    Compute the maximum token-level F1 overlap between `prediction` and one or more `golden_answers`.
+    Returns a float in [0.0, 1.0].
+    """
+    # Ensure list of answers
+    if isinstance(golden_answers, str):
+        golden_answers = [golden_answers]
+
+    # Tokenize normalized prediction
+    pred_tokens = normalize_answer(prediction).split()
+    pred_counts = Counter(pred_tokens)
+
+    best_f1 = 0.0
+    for ga in golden_answers:
+        gold_tokens = normalize_answer(ga).split()
+        gold_counts = Counter(gold_tokens)
+
+        # Count common tokens
+        common = pred_counts & gold_counts
+        num_same = sum(common.values())
+        if num_same == 0:
+            f1 = 0.0
+        else:
+            precision = num_same / len(pred_tokens)
+            recall    = num_same / len(gold_tokens)
+            f1        = 2 * precision * recall / (precision + recall)
+        best_f1 = max(best_f1, f1)
+
+    return best_f1
+
+
+def llm_semantic_check(prediction, golden_answers, model_path):
+    """
+    Uses a locally loaded LLM to score the semantic similarity between
+    a candidate prediction and the golden answer, returning a normalized
+    score in [0.0, 1.0].
+    """
+    # Construct the evaluation prompt
+    prompt = (
+        "# Role  \n"
+        "You are an objective evaluator comparing a candidate response to a golden answer.\n\n"
+        "# Instructions  \n"
+        "1. Rate on five dimensions (0–5 integers):  \n"
+        "   - **70%** Semantic Accuracy  \n"
+        "   - **7.5%** Completeness  \n"
+        "   - **7.5%** Logical Coherence  \n"
+        "   - **7.5%** Clarity  \n"
+        "   - **7.5%** Fluency  \n"
+        "2. Compute overall similarity (0–100):  \n"
+        "   overall = (0.70×SA + 0.075×(CMP+LC+CLR+FL)) × 20  \n"
+        "3. **Output only the overall score** No other fields or text or sql statements.\n\n"
+        "# Few-Shot  \n"
+        "Golden: Apple founded by Jobs/Wozniak (1976)  \n"
+        "Candidate: Jobs & Wozniak co‑founded Apple (1976), launching the PC era  \n"
+        "→ `100`  \n\n"
+        "Golden: Atmospheric layers: troposphere/stratosphere/mesosphere/thermosphere/exosphere  \n"
+        "Candidate: Atmosphere: troposphere & stratosphere  \n"
+        "→ `20`  \n\n"
+        "Golden: Deep learning stages: data preprocessing/model design/training/evaluation  \n"
+        "Candidate: DL workflow: data cleaning/network design/training/testing  \n"
+        "→ `100`  \n\n"
+        "Golden: EV benefits: zero emissions/high efficiency/low maintenance  \n"
+        "Candidate: EVs produce no pollutants but require charging networks  \n"
+        "→ `67`  \n\n"
+        "# Evaluation  \n"
+        f"Candidate: {prediction}  \n"
+        f"Golden: {golden_answers}  \n"
+    )
+
+    # 调用 HTTP 接口，增加重试／异常捕获
+    try:
+        response = httpx.post(
+            LLM_API_URL,
+            json={
+                "model": model_path,
+                "prompt": prompt,
+                "max_tokens": 10,       # 对应 max_new_tokens=10
+                "temperature": 0.01,    # 对应 temperature=0.01
+                "top_p": 1.0,           # 等同不截断采样
+                "n": 1
+            },
+            timeout=None
+        )
+        response.raise_for_status()
+        data = response.json()
+        raw = data["choices"][0]["text"].strip()
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
+        print(f"[WARNING] LLM service request failed: {e!r}")
+        raw = ""  # 退回空，下面会变 score100=0
+    except ValueError as e:  # JSONDecodeError 属于 ValueError
+        print(f"[WARNING] LLM service returned invalid JSON: {response.text!r}")
+        raw = ""
+
+    # 3) 提取数字并清洗
+    m = re.search(r"\d{1,3}", raw)
+    if not m:
+        score100 = 0
+    else:
+        v = int(m.group())
+        score100 = v if 0 <= v <= 100 else 0
+    
+    # 4) 归一化到 0–1
+    semantic_score = score100 / 100.0
+    return semantic_score
 
 
 def is_valid_sequence(text):
@@ -131,6 +243,7 @@ def extract_information_blocks(text: str) -> list[str]:
     matches = re.findall(pattern, text, re.DOTALL)
     return [match.strip() for match in matches]
 
+
 def count_repeat_information(text: str) -> int:
     # Count repeated information blocks
     info_blocks = extract_information_blocks(text)
@@ -143,6 +256,7 @@ def count_repeat_information(text: str) -> int:
             seen.add(block)
     return repeat_count
 
+
 def count_search_tags(text: str) -> int:
     """
     Count the number of complete <search>...</search> blocks in the text.
@@ -152,7 +266,8 @@ def count_search_tags(text: str) -> int:
     matches = re.findall(pattern, text, re.DOTALL)
     return len(matches)
 
-def compute_score_em(solution_str, ground_truth, structure_format_score=0, final_format_score=0, lambda_task=2, lambda_search_num=0.1, lambda_repeat_search_num=0.1, score=1.):
+
+def compute_score_em(solution_str, ground_truth, model_path, structure_format_score=0, final_format_score=0, lambda_task=2, lambda_search_num=0.1, lambda_repeat_search_num=0.1, score=1.):
     """The scoring function for exact match (EM).
 
     Args:
@@ -164,15 +279,18 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
 
     answer = extract_solution(solution_str=solution_str)
 
+    ###################
     do_print = random.randint(1, 64) == 1
-
+    #do_print=1
+    ##################
     if do_print:
         print(f"--------------------------------")
         print(f"Golden answers: {ground_truth['target']}")
         print(f"Extracted answer: {answer}")
         print(f"Solution string: {solution_str}")
-      
-    # 计算base得分
+   
+    llm_score = 0
+    f1_score = 0
     final_em_format_score = 0
     if answer is None:
         if is_valid_format:
@@ -180,15 +298,25 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
         else:
             final_em_format_score = 0
     else:
-        if em_check(answer, ground_truth['target']):
-            if is_valid_format:
-                final_em_format_score = score
-            else:
-                final_em_format_score = score - structure_format_score
-        elif is_valid_format:
-            final_em_format_score = structure_format_score
-        else:
-            final_em_format_score = final_format_score
+        # semantic_score ∈ [0,1]
+        # is_valid_format ∈ {0,1}
+        # structure_format_score = lambda_f ∈ [0,1]
+        semantic_score = em_check(answer, ground_truth['target'])
+        if not semantic_score:
+            llm_score = llm_semantic_check(answer, ground_truth['target'], model_path)
+            f1_score = f1_check(answer, ground_truth['target'])
+            semantic_score = max(f1_score, llm_score)
+
+        # 统一公式实现：
+        final_em_format_score = (
+            semantic_score
+            + structure_format_score * (
+                is_valid_format * (1 - semantic_score)
+                - (1 - is_valid_format) * semantic_score
+            )
+        )
+        # 为了防止数值漂移，可再做一次裁剪，确保 0 ≤ score ≤ 1
+        final_em_format_score = max(0.0, min(1.0, final_em_format_score))
     
     # Rewards for redundant retrieval
     n_search = count_search_tags(solution_str)
@@ -198,6 +326,8 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
     
     if do_print:
         print(f"EM Score: {em_check(answer, ground_truth['target'])}")
+        print(f"LLM Semantic Score: {llm_score}")
+        print(f"F-1 Score: {f1_score}")
         print(f"Format Valid: {is_valid_format}")
         print(f"Lambda task: {lambda_task}")
         print(f"Base Reward: {final_em_format_score}")
