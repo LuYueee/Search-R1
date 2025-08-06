@@ -28,6 +28,12 @@ pip install wandb
 pip install -r requirements.txt
 pip3 install nvidia-cublas-cu12==12.3.4.1 
 
+
+###第二阶段RL新增
+pip install spacy
+conda install -c conda-forge spacy-model-en_core_web_sm
+
+
 #########################################################
 3. 安装Retriever环境
 conda create -n retriever python=3.10
@@ -56,5 +62,16 @@ pip install -r requirements.txt
 ## install the gpu version faiss to guarantee efficient RL rollout
 pip install /home/jovyan/work_vol90/RL+RAG/faiss_gpu-1.7.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
+
+
+####执行完以上指令后，再执行新增指令：
+pip install -r requirements-retriever.txt
+pip uninstall torchaudio pytorch torchvision -y
+
+# we recommend installing torch with conda for faiss-gpu
+pip install torchaudio==2.4.0 
+conda install pytorch==2.4.0=cuda120_py310h2c91c31_301 \
+             torchvision==0.19.0=cuda120py310h8d5198f_0 \
+             -c conda-forge
 
 
