@@ -164,7 +164,7 @@ class RINDCalculator:
 
 # ------------------ 主代码 ------------------
 question = "Mike Barnett negotiated many contracts including which player that went on to become general manager of CSKA Moscow of the Kontinental Hockey League?"
-#question = "Who was Ph.D. advisor of Yue Lu from UCR?"
+question = "Who was Ph.D. advisor of Yue Lu from UCR?"
 #question = "Which Chinese city held the Olympic Games?"
 #question = "Which city is the capital of the United Kingdom?"
 # 模型路径
@@ -297,19 +297,30 @@ while True:
     #####
     # 奖励计算
     #####
-    #####
-    # 奖励计算
-    #####
     THETA = 1.2
     resp_text = output_text
 
     # 1. 用 spaCy 切分句子
     doc = rind_calculator.nlp(resp_text)
     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
-
+    '''
+    # ★ MOD: 合并因换行/引号被误分的片段
+    merged_sents = []  # ★ MOD
+    i = 0              # ★ MOD
+    while i < len(sentences):  # ★ MOD
+        s = sentences[i]       # ★ MOD
+        # 如果这一句**不**以 . ! ?（可选"）结尾，且后面还有句子，就合并
+        if not re.search(r'[\.!?。！？]"?$', s) and i + 1 < len(sentences):  # ★ MOD
+            s = s + ' ' + sentences[i+1]  # ★ MOD
+            i += 2                         # ★ MOD
+        else:
+            i += 1                         # ★ MOD
+        merged_sents.append(s)            # ★ MOD
+    sentences = merged_sents             # ★ MOD
+    '''
     # 2. 记录 <search>…</search>、<information>…</information> 区块
     skip_spans = []
-    for tag in ("search", "information"):
+    for tag in ("search", "information", "answer"):  # ★ MOD: 加入 answer 区块
         for m in re.finditer(fr"<{tag}>(.*?)</{tag}>", resp_text, re.DOTALL):
             skip_spans.append((m.start(), m.end()))
     skip_spans.sort()
@@ -331,9 +342,8 @@ while True:
         end_pos = start_pos + len(sent)                                  
 
         # 跳过标签句子
-        if ("<answer>" in sent or "</answer>" in sent
-            or "<search>" in sent or "</search>" in sent
-            or any(s <= start_pos < e for s, e in skip_spans)):
+        if (any(f"<{tag}" in sent for tag in ("search","information","answer"))  # ★ MOD: 直接检查三类标签
+           or any(s <= start_pos < e for s, e in skip_spans)):                 # ★ MOD: 或落入 skip_spans
             print(f"Skip tagged sentence:\n {sent} → reward = 0")
             continue
 
