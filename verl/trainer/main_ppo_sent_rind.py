@@ -133,14 +133,14 @@ class RewardManager():
                 print(f"[Debug] Sample {i} reward_tensor[{i}, {t}] = {reward_tensor[i, t].item():.4f}")
             # —— 句子级奖励分配结束 —— #
             all_scores.append(score)
-            print(f"[DEBUG] Batch reward stats - mean: {np.mean(all_scores):.4f}, min: {np.min(all_scores):.4f}, max: {np.max(all_scores):.4f}")
+            
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0
 
             if already_print_data_sources[data_source] < self.num_examine:
                 already_print_data_sources[data_source] += 1
                 print(sequences_str)
-
+        print(f"[DEBUG] Batch reward stats - mean: {np.mean(all_scores):.4f}, min: {np.min(all_scores):.4f}, max: {np.max(all_scores):.4f}")
         # —— 新增：打印本 batch 的奖励统计 —— #
         # 只统计非零奖励（即真正分配到句尾的那些 step）
         nonzero = reward_tensor[reward_tensor != 0.0]
@@ -155,7 +155,6 @@ class RewardManager():
 
 
         return reward_tensor
-
 
 import ray
 import hydra
