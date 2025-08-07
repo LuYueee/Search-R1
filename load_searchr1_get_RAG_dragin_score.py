@@ -165,7 +165,7 @@ class RINDCalculator:
 # ------------------ 主代码 ------------------
 question = "Mike Barnett negotiated many contracts including which player that went on to become general manager of CSKA Moscow of the Kontinental Hockey League?"
 #question = "Who was Ph.D. advisor of Yue Lu from UCR?"
-#question = "Which Chinese city hosted the Olympic Games?"
+#question = "Which Chinese city held the Olympic Games?"
 #question = "Which city is the capital of the United Kingdom?"
 # 模型路径
 model_id = "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq_search-r1-ppo-qwen2.5-3b-it-em-format-retrieval/actor/global_step_100"
@@ -293,6 +293,94 @@ while True:
     for word, rind, attn, ent, tok_num, pos in rind_scores:
         print(f"{word:<15}{rind:<10.4f}{attn:<10.4f}{ent:<10.4f}{tok_num:<10}{pos}")
     print("="*50 + "\n")
+    
+    #####
+    # 奖励计算
+    #####
+    #####
+    # 奖励计算
+    #####
+    THETA = 1.2
+    resp_text = output_text
+
+    # 1. 用 spaCy 切分句子
+    doc = rind_calculator.nlp(resp_text)
+    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+
+    # 2. 记录 <search>…</search>、<information>…</information> 区块
+    skip_spans = []
+    for tag in ("search", "information"):
+        for m in re.finditer(fr"<{tag}>(.*?)</{tag}>", resp_text, re.DOTALL):
+            skip_spans.append((m.start(), m.end()))
+    skip_spans.sort()
+    merged = []
+    for s, e in skip_spans:
+        if not merged or s > merged[-1][1]:
+            merged.append([s, e])
+        else:
+            merged[-1][1] = max(merged[-1][1], e)
+    skip_spans = merged
+
+    # ★ MOD: 3. 一次性获取 offset mapping，去掉 tok_strs
+    encoding = tokenizer(resp_text, return_offsets_mapping=True, add_special_tokens=False)  # ★ MOD
+    offsets = encoding["offset_mapping"]                                 # ★ MOD
+
+    # 4. 遍历句子
+    for sent in sentences:
+        start_pos = resp_text.find(sent)
+        end_pos = start_pos + len(sent)                                  
+
+        # 跳过标签句子
+        if ("<answer>" in sent or "</answer>" in sent
+            or "<search>" in sent or "</search>" in sent
+            or any(s <= start_pos < e for s, e in skip_spans)):
+            print(f"Skip tagged sentence:\n {sent} → reward = 0")
+            continue
+
+        # ★ MOD: 4.2 用 offsets 精确找本句的 token idx 区间
+        token_idxs = [i for i,(s,e) in enumerate(offsets) if s >= start_pos and e <= end_pos]  # ★ MOD
+        if not token_idxs:
+            print(f"No tokens for sentence: {sent} → reward = 0")
+            continue
+
+        # 取出对应的 token_ids 和 scores
+        sent_tok_ids = generated_tokens[token_idxs[0]: token_idxs[-1] + 1]
+        mini_scores   = outputs.scores[token_idxs[0]: token_idxs[-1] + 1]
+
+
+        class MiniOut:
+            def __init__(self, scores): self.scores = tuple(scores)
+        mini_out = MiniOut(mini_scores)
+
+        # 4.3 计算 RIND 并求 M
+        rind_list = rind_calculator.compute_rind_for_generation(
+            mini_out,
+            sent_tok_ids,
+            solver='max'
+        )
+        M = max(r for _, r, *_ in rind_list) if rind_list else 0.0
+
+        # 4.4 动作判定（保持原有逻辑）
+        tail = resp_text[end_pos:]
+        if re.match(r'\s*<search>', tail):
+            action = "SEARCH"
+        elif re.match(r'\s*<answer>', tail):
+            action = "ANSWER"
+        else:
+            action = "CONTINUE_THINK"
+
+
+        # 4.5 计算奖励（保持原有逻辑）
+        if M > THETA:
+            reward = +2 if action == "SEARCH" else -2
+        else:
+            reward = +1 if action in ("CONTINUE_THINK", "ANSWER") else -1
+
+        print(f"Sentence:\n {sent}")
+        print(f"  MaxRIND = {M:.4f}, Action = {action}, Reward = {reward}")
+        print("-" * 40)
+
+        ####
     
     # 更新完整上下文（用于日志等）
     full_context += output_text
