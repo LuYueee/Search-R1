@@ -13,14 +13,20 @@
 # limitations under the License.
 
 import os
+import math
 import torch
+import torch.nn.functional as F
 from typing import Optional, List, Union, Tuple, Unpack, Callable
 
 from transformers.models.llama.modeling_llama import apply_rotary_pos_emb, repeat_kv
 from transformers.cache_utils import Cache
 from transformers.utils import logging
 from transformers.modeling_flash_attention_utils import _flash_attention_forward
-from verl.utils.ulysses import gather_heads_scatter_seq, gather_seq_scatter_heads, get_ulysses_sequence_parallel_world_size
+from verl.utils.ulysses import (
+    gather_heads_scatter_seq,
+    gather_seq_scatter_heads,
+    get_ulysses_sequence_parallel_world_size,
+)
 
 logger = logging.get_logger(__name__)
 
@@ -36,10 +42,7 @@ def llama_flash_attn_forward(
         position_embeddings: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,  # will become mandatory in v4.46
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
-    """
-        adapt from transformers 4.47.1
-        """
-    output_attentions = False
+    """adapt from transformers 4.47.1 with optional attention weights"""
 
     bsz, q_len, _ = hidden_states.size()
 
@@ -53,10 +56,6 @@ def llama_flash_attn_forward(
     query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
     key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
     value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-
-    # trade off: repeat first and then all to all
-    # key_states = repeat_kv(key_states, self.num_key_value_groups)
-    # value_states = repeat_kv(value_states, self.num_key_value_groups)
 
     ########## AlltoAll for Ulysses ##########
     ulysses_sp_size = get_ulysses_sequence_parallel_world_size()
@@ -94,16 +93,10 @@ def llama_flash_attn_forward(
     dropout_rate = self.attention_dropout if self.training else 0.0
 
     # In PEFT, usually we cast the layer norms in float32 for training stability reasons
-    # therefore the input hidden states gets silently casted in float32. Hence, we need
-    # cast them back in the correct dtype just to be sure everything works as expected.
-    # This might slowdown training & inference so it is recommended to not cast the LayerNorms
-    # in fp32. (LlamaRMSNorm handles it correctly)
-
     input_dtype = query_states.dtype
     if input_dtype == torch.float32:
         if torch.is_autocast_enabled():
             target_dtype = torch.get_autocast_gpu_dtype()
-        # Handle the case where the model is quantized
         elif hasattr(self.config, "_pre_quantization_dtype"):
             target_dtype = self.config._pre_quantization_dtype
         else:
@@ -118,19 +111,30 @@ def llama_flash_attn_forward(
         key_states = key_states.to(target_dtype)
         value_states = value_states.to(target_dtype)
 
-    attn_output = _flash_attention_forward(
-        query_states,
-        key_states,
-        value_states,
-        attention_mask,
-        full_q_len,
-        position_ids=position_ids,
-        dropout=dropout_rate,
-        sliding_window=getattr(self, "sliding_window", None),
-        use_top_left_mask=self._flash_attn_uses_top_left_mask,
-        is_causal=self.is_causal,
-        **kwargs,
-    )
+    if output_attentions:
+        key_states = repeat_kv(key_states, self.num_key_value_groups)
+        value_states = repeat_kv(value_states, self.num_key_value_groups)
+        attn_weights = torch.matmul(query_states, key_states.transpose(-1, -2))
+        attn_weights /= math.sqrt(self.head_dim)
+        if attention_mask is not None:
+            attn_weights = attn_weights + attention_mask
+        attn_weights = F.softmax(attn_weights, dim=-1)
+        attn_output = torch.matmul(attn_weights, value_states)
+    else:
+        attn_output = _flash_attention_forward(
+            query_states,
+            key_states,
+            value_states,
+            attention_mask,
+            full_q_len,
+            position_ids=position_ids,
+            dropout=dropout_rate,
+            sliding_window=getattr(self, "sliding_window", None),
+            use_top_left_mask=self._flash_attn_uses_top_left_mask,
+            is_causal=self.is_causal,
+            **kwargs,
+        )
+        attn_weights = None
 
     attn_output = attn_output.reshape(bsz, full_q_len, -1, self.head_dim).contiguous()
     ########## AlltoAll for Ulysses ##########
@@ -138,8 +142,5 @@ def llama_flash_attn_forward(
         attn_output = gather_heads_scatter_seq(attn_output, seq_dim=1, head_dim=2)
     attn_output = attn_output.reshape(bsz, q_len, -1).contiguous()
     attn_output = self.o_proj(attn_output)
-
-    if not output_attentions:
-        attn_weights = None
 
     return attn_output, attn_weights, past_key_value
