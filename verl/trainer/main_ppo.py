@@ -21,6 +21,8 @@ from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 import re
 import numpy as np
+from verl.utils.rind_reward import RINDCalculator, assign_rind_rewards_for_generated_text
+from types import SimpleNamespace
 
 def _select_rm_score_fn(data_source):
     if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
@@ -40,6 +42,8 @@ class RewardManager():
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.rind_calculator = RINDCalculator(model=None, tokenizer=tokenizer)
+        self.theta = 1.2
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -61,11 +65,11 @@ class RewardManager():
 
             prompt_length = prompt_ids.shape[-1]
 
-            valid_prompt_length = data_item.batch['attention_mask'][:prompt_length].sum()
+            valid_prompt_length = int(data_item.batch['attention_mask'][:prompt_length].sum().item())
             valid_prompt_ids = prompt_ids[-valid_prompt_length:]
 
             response_ids = data_item.batch['responses']
-            valid_response_length = data_item.batch['attention_mask'][prompt_length:].sum()
+            valid_response_length = int(data_item.batch['attention_mask'][prompt_length:].sum().item())
             valid_response_ids = response_ids[:valid_response_length]
 
             # decode
@@ -84,8 +88,23 @@ class RewardManager():
                                      retrieval_score=self.retrieval_score,
                                      format_score=self.format_score)
 
-            reward_tensor[i, valid_response_length - 1] = score
-            # all_scores.append(score)
+            full_gen_out = data_item.non_tensor_batch['generate_outputs']
+            full_gen_ids = data_item.non_tensor_batch['generated_tokens']
+            gen_ids = full_gen_ids[:valid_response_length]
+            scores_slice = full_gen_out.scores[:valid_response_length]
+            attn_slice = [layer[:, :valid_response_length, :valid_response_length] for layer in full_gen_out.attentions]
+            gen_out = SimpleNamespace(scores=scores_slice, attentions=tuple(attn_slice))
+
+            token_scores = assign_rind_rewards_for_generated_text(
+                rind_calc=self.rind_calculator,
+                tokenizer=self.tokenizer,
+                generation_outputs=gen_out,
+                generated_tokens_ids=gen_ids,
+                theta=self.theta,
+                em_sparse_value=score,
+                debug=False,
+            )
+            reward_tensor[i, :valid_response_length] = token_scores[:valid_response_length]
 
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0
