@@ -21,6 +21,8 @@ import warnings
 
 import torch
 import torch.distributed
+import numpy as np
+from types import SimpleNamespace
 import verl.utils.hdfs_io as hdfs_io
 import verl.utils.torch_functional as verl_F
 from omegaconf import DictConfig, open_dict
@@ -465,6 +467,24 @@ class ActorRolloutRefWorker(Worker):
                 old_log_probs = self.actor.compute_log_prob(data=output)
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
+
+        if self._is_actor:
+            responses = output.batch['responses'].to('cuda')
+            attn_mask = torch.ones_like(responses)
+            with torch.no_grad():
+                fsdp_out = self.actor_module_fsdp(input_ids=responses, attention_mask=attn_mask, output_attentions=True)
+            logits = fsdp_out.logits[:, :-1].cpu()
+            attns = [layer[:, :, :-1, :-1].cpu() for layer in fsdp_out.attentions]
+            gen_outputs = []
+            gen_tokens = []
+            seq_len = logits.shape[1]
+            for b in range(responses.size(0)):
+                scores = tuple(logits[b, t].unsqueeze(0) for t in range(seq_len))
+                attn = tuple(layer[b] for layer in attns)
+                gen_outputs.append(SimpleNamespace(scores=scores, attentions=attn))
+                gen_tokens.append(responses[b, 1:].cpu())
+            output.non_tensor_batch['generate_outputs'] = np.array(gen_outputs, dtype=object)
+            output.non_tensor_batch['generated_tokens'] = np.array(gen_tokens, dtype=object)
 
         output = output.to('cpu')
 
