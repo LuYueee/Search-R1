@@ -21,6 +21,8 @@ import warnings
 
 import torch
 import torch.distributed
+import numpy as np
+from types import SimpleNamespace
 import verl.utils.hdfs_io as hdfs_io
 import verl.utils.torch_functional as verl_F
 from omegaconf import DictConfig, open_dict
@@ -465,6 +467,38 @@ class ActorRolloutRefWorker(Worker):
                 old_log_probs = self.actor.compute_log_prob(data=output)
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
+
+        # ---------------------------------------------------------------
+        # Collect logits and attentions for generated responses so that
+        # the reward function can compute RIND scores without reloading
+        # a separate model. We perform one batched forward pass with the
+        # FSDP actor module and store the results inside
+        # ``non_tensor_batch`` as numpy object arrays.
+        # ---------------------------------------------------------------
+        try:
+            responses = output.batch['responses'].to('cuda')
+            batch_size, resp_len = responses.shape
+            bos = torch.full((batch_size, 1), self.tokenizer.bos_token_id, dtype=responses.dtype, device=responses.device)
+            model_in = torch.cat([bos, responses], dim=1)
+            attn_mask = torch.ones_like(model_in, dtype=torch.long)
+            with torch.no_grad():
+                hf_out = self.actor_module_fsdp(input_ids=model_in,
+                                                attention_mask=attn_mask,
+                                                output_attentions=True,
+                                                use_cache=False)
+            logits = hf_out.logits[:, :-1].cpu()  # (bs, resp_len, vocab)
+            attn_last = hf_out.attentions[-1][:, :, 1:, 1:].cpu()  # (bs, n_head, resp_len, resp_len)
+            gen_out_list = []
+            gen_ids_list = []
+            for b in range(batch_size):
+                scores = tuple(logits[b, t].unsqueeze(0) for t in range(resp_len))
+                attn = attn_last[b].unsqueeze(0)  # mimic HF shape
+                gen_out_list.append(SimpleNamespace(scores=scores, attentions=(attn,)))
+                gen_ids_list.append(responses[b].cpu())
+            output.non_tensor_batch['generate_outputs'] = np.array(gen_out_list, dtype=object)
+            output.non_tensor_batch['generated_tokens'] = np.array(gen_ids_list, dtype=object)
+        except Exception as e:
+            print(f'[fsdp_workers] Failed to collect logits/attentions: {e}')
 
         output = output.to('cpu')
 
