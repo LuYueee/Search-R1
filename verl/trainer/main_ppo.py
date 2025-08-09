@@ -21,6 +21,8 @@ from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 import re
 import numpy as np
+from verl.utils.rind_reward import RINDCalculator, assign_rind_rewards_for_generated_text
+from types import SimpleNamespace
 
 def _select_rm_score_fn(data_source):
     if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
@@ -40,6 +42,7 @@ class RewardManager():
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.rind_calculator = RINDCalculator(model=None, tokenizer=tokenizer)
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -78,14 +81,40 @@ class RewardManager():
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
 
-            score = compute_score_fn(solution_str=sequences_str, ground_truth=ground_truth, 
-                                     structure_format_score=self.structure_format_score, 
-                                     final_format_score=self.final_format_score, 
+            score = compute_score_fn(solution_str=sequences_str, ground_truth=ground_truth,
+                                     structure_format_score=self.structure_format_score,
+                                     final_format_score=self.final_format_score,
                                      retrieval_score=self.retrieval_score,
                                      format_score=self.format_score)
 
+            # ---------------------------------------------------------------
+            # RIND-based dense rewards.  ``generate_outputs`` and
+            # ``generated_tokens`` are prepared in fsdp_workers during
+            # rollout.  We convert the returned numpy object arrays back to
+            # python objects and compute sentence-level rewards, which are
+            # then placed on the last token of each sentence.
+            # ---------------------------------------------------------------
+            gen_out_full = data_item.non_tensor_batch['generate_outputs']
+            gen_ids_full = data_item.non_tensor_batch['generated_tokens']
+            gen_out = SimpleNamespace(
+                scores=gen_out_full.scores[:valid_response_length],
+                attentions=(gen_out_full.attentions[-1][:, :, :valid_response_length, :valid_response_length],),
+            )
+            gen_ids = gen_ids_full[:valid_response_length]
+            token_scores = assign_rind_rewards_for_generated_text(
+                rind_calc=self.rind_calculator,
+                tokenizer=self.tokenizer,
+                generation_outputs=gen_out,
+                generated_tokens_ids=gen_ids,
+                theta=1.2,
+                debug=False,
+            )
+            token_scores = torch.tensor(token_scores, dtype=torch.float32, device=reward_tensor.device)
+            if token_scores.numel() > 0:
+                reward_tensor[i, :token_scores.numel()] = token_scores
+
+            # keep the original sparse EM score at the final valid token
             reward_tensor[i, valid_response_length - 1] = score
-            # all_scores.append(score)
 
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0
