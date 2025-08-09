@@ -18,7 +18,9 @@ The main entry point to run the PPO algorithm
 import logging
 import os
 import warnings
+from types import SimpleNamespace
 
+import numpy as np
 import torch
 import torch.distributed
 import verl.utils.hdfs_io as hdfs_io
@@ -465,6 +467,28 @@ class ActorRolloutRefWorker(Worker):
                 old_log_probs = self.actor.compute_log_prob(data=output)
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
+
+        # collect logits and attention for reward computation
+        responses = output.batch['responses']
+        with torch.no_grad():
+            attn_out = self.actor_module_fsdp(
+                input_ids=responses,
+                attention_mask=torch.ones_like(responses),
+                output_attentions=True,
+                use_cache=False,
+            )
+        logits = attn_out.logits
+        attentions = attn_out.attentions
+
+        gen_outputs = []
+        gen_tokens = []
+        for b in range(responses.size(0)):
+            score_tuple = tuple(logits[b].detach().cpu().split(1, dim=0))
+            attn_tuple = tuple(layer[b].detach().cpu() for layer in attentions)
+            gen_outputs.append(SimpleNamespace(scores=score_tuple, attentions=attn_tuple))
+            gen_tokens.append(responses[b].detach().cpu())
+        output.non_tensor_batch['generate_outputs'] = np.array(gen_outputs, dtype=object)
+        output.non_tensor_batch['generated_tokens'] = np.array(gen_tokens, dtype=object)
 
         output = output.to('cpu')
 
