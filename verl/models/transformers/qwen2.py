@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import math
 import torch
 from typing import Optional, Tuple
 
@@ -37,6 +38,7 @@ def qwen2_flash_attn_forward(
         position_embeddings: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,  # will become mandatory in v4.46
 ):
     bsz, q_len, _ = hidden_states.size()
+    attn_weights = None
 
     query_states = self.q_proj(hidden_states)
     key_states = self.k_proj(hidden_states)
@@ -110,18 +112,34 @@ def qwen2_flash_attn_forward(
     else:
         sliding_window = None
 
-    attn_output = _flash_attention_forward(
-        query_states,
-        key_states,
-        value_states,
-        attention_mask,
-        full_q_len,
-        position_ids=position_ids,
-        dropout=dropout_rate,
-        sliding_window=sliding_window,
-        is_causal=self.is_causal,
-        use_top_left_mask=self._flash_attn_uses_top_left_mask,
-    )
+    if output_attentions:
+        q = query_states.transpose(1, 2)  # (bsz, n_head, seq_len, head_dim)
+        k = key_states.transpose(1, 2)
+        v = value_states.transpose(1, 2)
+        attn_weights = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        if self.is_causal:
+            causal_mask = torch.triu(
+                torch.ones(q_len, q_len, device=attn_weights.device, dtype=torch.bool), 1
+            )
+            attn_weights = attn_weights.masked_fill(causal_mask, float("-inf"))
+        attn_weights = torch.softmax(attn_weights, dim=-1, dtype=torch.float32).to(q.dtype)
+        if dropout_rate > 0.0:
+            attn_weights = torch.nn.functional.dropout(attn_weights, p=dropout_rate, training=self.training)
+        attn_output = torch.matmul(attn_weights, v).transpose(1, 2)
+    else:
+        attn_output = _flash_attention_forward(
+            query_states,
+            key_states,
+            value_states,
+            attention_mask,
+            full_q_len,
+            position_ids=position_ids,
+            dropout=dropout_rate,
+            sliding_window=sliding_window,
+            is_causal=self.is_causal,
+            use_top_left_mask=self._flash_attn_uses_top_left_mask,
+        )
+        attn_weights = None
 
     # use full_q_len to reshape
     attn_output = attn_output.reshape(bsz, full_q_len, -1, self.head_dim).contiguous()
@@ -130,8 +148,5 @@ def qwen2_flash_attn_forward(
         attn_output = gather_heads_scatter_seq(attn_output, seq_dim=1, head_dim=2)
     attn_output = attn_output.reshape(bsz, q_len, -1).contiguous()
     attn_output = self.o_proj(attn_output)
-
-    if not output_attentions:
-        attn_weights = None
 
     return attn_output, attn_weights, past_key_value
