@@ -21,6 +21,8 @@ import warnings
 
 import torch
 import torch.distributed
+import numpy as np
+from types import SimpleNamespace
 import verl.utils.hdfs_io as hdfs_io
 import verl.utils.torch_functional as verl_F
 from omegaconf import DictConfig, open_dict
@@ -141,8 +143,6 @@ class ActorRolloutRefWorker(Worker):
         if use_remove_padding:
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(actor_model_config.model_type)
-
-        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(actor_model_config, verbose=True)
 
@@ -466,6 +466,66 @@ class ActorRolloutRefWorker(Worker):
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
 
+        # ---------------------------------------------------------------
+        # Collect logits and attentions for generated responses so that
+        # the reward function can compute RIND scores without reloading
+        # a separate model. We perform one batched forward pass with the
+        # FSDP actor module and store the results inside
+        # ``non_tensor_batch`` as numpy object arrays.
+        # ---------------------------------------------------------------
+        try:
+            responses = output.batch['responses'].to('cuda')
+            batch_size, resp_len = responses.shape
+            bos_id = self.tokenizer.bos_token_id
+            if bos_id is None:
+                bos_id = self.tokenizer.eos_token_id if self.tokenizer.eos_token_id is not None else 0
+            bos = torch.full((batch_size, 1), bos_id, dtype=responses.dtype, device=responses.device)
+            model_in = torch.cat([bos, responses], dim=1)
+            attn_mask = torch.ones_like(model_in, dtype=torch.long)
+
+            # Micro-batch the extra forward pass to avoid materializing the
+            # entire batch at once, which can trigger OOM on large batches.
+            mbsz = getattr(self.config.rollout, 'log_prob_micro_batch_size', 32)
+            logits_chunks = []
+            attn_chunks = []
+
+            was_training = self.actor_module_fsdp.training
+            self.actor_module_fsdp.eval()
+            try:
+                with torch.no_grad():
+                    for start in range(0, batch_size, mbsz):
+                        end = min(start + mbsz, batch_size)
+                        mb_input = model_in[start:end]
+                        mb_mask = attn_mask[start:end]
+                        with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+                            hf_mb = self.actor_module_fsdp(input_ids=mb_input,
+                                                           attention_mask=mb_mask,
+                                                           output_attentions=True,
+                                                           use_cache=False)
+                        logits_chunks.append(hf_mb.logits[:, :-1].cpu())
+                        attn_chunks.append(hf_mb.attentions[-1][:, :, 1:, 1:].cpu())
+                        del hf_mb
+                        torch.cuda.empty_cache()
+            finally:
+                if was_training:
+                    self.actor_module_fsdp.train()
+
+            logits = torch.cat(logits_chunks, dim=0)
+            attn_last = torch.cat(attn_chunks, dim=0)
+
+            gen_out_list = []
+            gen_ids_list = []
+            for b in range(batch_size):
+                scores = tuple(logits[b, t].unsqueeze(0) for t in range(resp_len))
+                attn = attn_last[b].unsqueeze(0)  # mimic HF shape
+                gen_out_list.append(SimpleNamespace(scores=scores, attentions=(attn,)))
+                gen_ids_list.append(responses[b].cpu())
+
+            output.non_tensor_batch['generate_outputs'] = np.array(gen_out_list, dtype=object)
+            output.non_tensor_batch['generated_tokens'] = np.array(gen_ids_list, dtype=object)
+        except Exception as e:
+            print(f'[fsdp_workers] Failed to collect logits/attentions: {e}')
+
         output = output.to('cpu')
 
         if self._is_offload_param:
@@ -607,8 +667,6 @@ class CriticWorker(Worker):
         if use_remove_padding:
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(critic_model_config.model_type)
-
-        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(critic_model_config, verbose=True)
 
@@ -846,8 +904,6 @@ class RewardModelWorker(Worker):
         if use_remove_padding:
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(model_config.model_type)
-
-        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(model_config, verbose=True)
 
