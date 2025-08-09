@@ -37,6 +37,8 @@ from verl.utils.import_utils import import_external_libs
 from verl.utils.model import compute_position_id_with_mask
 from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
+import numpy as np
+from types import SimpleNamespace
 
 from codetiming import Timer
 
@@ -465,6 +467,26 @@ class ActorRolloutRefWorker(Worker):
                 old_log_probs = self.actor.compute_log_prob(data=output)
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
+
+        # collect logits and attentions for RIND reward
+        responses = output.batch['responses'].to('cuda')
+        with torch.no_grad():
+            rind_out = self.actor_module_fsdp(input_ids=responses,
+                                              attention_mask=torch.ones_like(responses),
+                                              use_cache=False,
+                                              output_attentions=True)
+        logits = rind_out.logits
+        attn_layers = rind_out.attentions
+        non_tensor = {'generate_outputs': [], 'generated_tokens': []}
+        batch_size, seq_len = responses.shape
+        for b in range(batch_size):
+            scores = [logits[b, t].detach().cpu() for t in range(seq_len)]
+            attns = [layer[b].detach().cpu() for layer in attn_layers]
+            non_tensor['generate_outputs'].append(SimpleNamespace(scores=tuple(scores), attentions=tuple(attns)))
+            non_tensor['generated_tokens'].append(responses[b].detach().cpu())
+        for k, v in non_tensor.items():
+            non_tensor[k] = np.array(v, dtype=object)
+        output.non_tensor_batch.update(non_tensor)
 
         output = output.to('cpu')
 
