@@ -17,16 +17,9 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 
 from verl import DataProto
 import torch
-from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
-import re
-import numpy as np
-
-def _select_rm_score_fn(data_source):
-    if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
-        return qa_em_format.compute_score_em
-    else:
-        raise NotImplementedError
+from verl.utils.rind_reward import RINDCalculator, assign_rind_rewards_for_generated_text
+from types import SimpleNamespace
 
 
 class RewardManager():
@@ -35,11 +28,12 @@ class RewardManager():
 
     def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0.) -> None:
         self.tokenizer = tokenizer
-        self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+        self.num_examine = num_examine
         self.format_score = format_score
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.rind_calculator = RINDCalculator(tokenizer)
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -50,46 +44,42 @@ class RewardManager():
 
         reward_tensor = torch.zeros_like(data.batch['responses'], dtype=torch.float32)
 
-        # all_scores = []
-
         already_print_data_sources = {}
 
         for i in range(len(data)):
-            data_item = data[i]  # DataProtoItem
+            data_item = data[i]
 
             prompt_ids = data_item.batch['prompts']
-
             prompt_length = prompt_ids.shape[-1]
-
             valid_prompt_length = data_item.batch['attention_mask'][:prompt_length].sum()
             valid_prompt_ids = prompt_ids[-valid_prompt_length:]
 
             response_ids = data_item.batch['responses']
             valid_response_length = data_item.batch['attention_mask'][prompt_length:].sum()
-            valid_response_ids = response_ids[:valid_response_length]
 
-            # decode
-            sequences = torch.cat((valid_prompt_ids, valid_response_ids))
+            sequences = torch.cat((valid_prompt_ids, response_ids[:valid_response_length]))
             sequences_str = self.tokenizer.decode(sequences)
 
-            ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
+            gen_out_full = data_item.non_tensor_batch['generate_outputs']
+            gen_tokens = data_item.non_tensor_batch['generated_tokens'][:valid_response_length]
+            scores = gen_out_full.scores[:valid_response_length]
+            attentions = [layer[:, :valid_response_length, :valid_response_length] for layer in gen_out_full.attentions]
+            mini_out = SimpleNamespace(scores=tuple(scores), attentions=tuple(attentions))
+            row = torch.zeros(valid_response_length, dtype=torch.float32)
+            assign_rind_rewards_for_generated_text(
+                self.rind_calculator,
+                self.tokenizer,
+                mini_out,
+                gen_tokens,
+                row,
+                theta=1.2,
+                debug=False,
+            )
+            reward_tensor[i, :valid_response_length - 1] = row[:valid_response_length - 1]
 
-            # select rm_score
-            data_source = data_item.non_tensor_batch['data_source']
-            compute_score_fn = _select_rm_score_fn(data_source)
-
-            score = compute_score_fn(solution_str=sequences_str, ground_truth=ground_truth, 
-                                     structure_format_score=self.structure_format_score, 
-                                     final_format_score=self.final_format_score, 
-                                     retrieval_score=self.retrieval_score,
-                                     format_score=self.format_score)
-
-            reward_tensor[i, valid_response_length - 1] = score
-            # all_scores.append(score)
-
+            data_source = data_item.non_tensor_batch.get('data_source', 'unknown')
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0
-
             if already_print_data_sources[data_source] < self.num_examine:
                 already_print_data_sources[data_source] += 1
                 print(sequences_str)
