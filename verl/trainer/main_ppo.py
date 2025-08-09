@@ -18,6 +18,7 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 from verl import DataProto
 import torch
 from verl.utils.reward_score import qa_em, qa_em_format
+from verl.utils.rind_reward import RINDCalculator, assign_rind_rewards_for_generated_text
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 import re
 import numpy as np
@@ -40,6 +41,7 @@ class RewardManager():
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.rind_calculator = RINDCalculator(model=None, tokenizer=tokenizer)
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -78,14 +80,26 @@ class RewardManager():
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
 
-            score = compute_score_fn(solution_str=sequences_str, ground_truth=ground_truth, 
-                                     structure_format_score=self.structure_format_score, 
-                                     final_format_score=self.final_format_score, 
+            score = compute_score_fn(solution_str=sequences_str, ground_truth=ground_truth,
+                                     structure_format_score=self.structure_format_score,
+                                     final_format_score=self.final_format_score,
                                      retrieval_score=self.retrieval_score,
                                      format_score=self.format_score)
 
-            reward_tensor[i, valid_response_length - 1] = score
-            # all_scores.append(score)
+            gen_out = data_item.non_tensor_batch['generate_outputs']
+            gen_ids = data_item.non_tensor_batch['generated_tokens']
+            token_scores = torch.zeros(valid_response_length, dtype=torch.float32)
+            assign_rind_rewards_for_generated_text(
+                rind_calc=self.rind_calculator,
+                tokenizer=self.tokenizer,
+                generation_outputs=gen_out,
+                generated_tokens_ids=gen_ids[:valid_response_length],
+                reward_tensor_row=token_scores,
+                theta=1.2,
+                em_sparse_value=score,
+                debug=False,
+            )
+            reward_tensor[i, :valid_response_length] = token_scores
 
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0

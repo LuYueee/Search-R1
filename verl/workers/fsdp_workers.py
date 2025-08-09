@@ -37,6 +37,8 @@ from verl.utils.import_utils import import_external_libs
 from verl.utils.model import compute_position_id_with_mask
 from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
+import numpy as np
+from types import SimpleNamespace
 
 from codetiming import Timer
 
@@ -452,6 +454,36 @@ class ActorRolloutRefWorker(Worker):
             log_gpu_memory_usage('After rollout generation', logger=logger)
 
             output = self.rollout_sharding_manager.postprocess_data(output)
+
+        # ------------------------------------------------------------------
+        # Collect logits and attentions for RIND reward
+        # ------------------------------------------------------------------
+        response = output.batch['responses']
+        prompt = output.batch['prompts']
+        bsz, resp_len = response.shape
+        prompt_len = prompt.shape[1]
+
+        with torch.no_grad():
+            seq = torch.cat([prompt, response], dim=-1).to('cuda')
+            attn_mask = torch.ones_like(seq)
+            model_out = self.actor_module_fsdp(input_ids=seq[:, :-1],
+                                               attention_mask=attn_mask[:, :-1],
+                                               output_attentions=True,
+                                               use_cache=False)
+            logits = model_out.logits[:, prompt_len-1:prompt_len+resp_len-1]
+            attns = [layer[:, :, prompt_len-1:prompt_len+resp_len-1,
+                           prompt_len-1:prompt_len+resp_len-1]
+                     for layer in model_out.attentions]
+
+        non_tensor = {'generate_outputs': [], 'generated_tokens': []}
+        for b in range(bsz):
+            score_tuple = tuple(logits[b, t].detach().cpu().unsqueeze(0)
+                                for t in range(resp_len))
+            attn_tuple = tuple(layer[b].detach().cpu() for layer in attns)
+            non_tensor['generate_outputs'].append(SimpleNamespace(scores=score_tuple,
+                                                                  attentions=attn_tuple))
+            non_tensor['generated_tokens'].append(response[b].detach().cpu())
+        output.non_tensor_batch.update({k: np.array(v, dtype=object) for k, v in non_tensor.items()})
 
         if self._is_actor and recompute_log_prob:
             # we should always recompute old_log_probs when it is HybridEngine
