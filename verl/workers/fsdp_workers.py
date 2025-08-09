@@ -453,6 +453,18 @@ class ActorRolloutRefWorker(Worker):
 
             output = self.rollout_sharding_manager.postprocess_data(output)
 
+        # Prepare BOS tensor for tokenizers that may not define it explicitly.
+        if 'responses' in output.batch:
+            responses = output.batch['responses']
+            batch_size = responses.size(0)
+            bos_id = (self.tokenizer.bos_token_id
+                      or self.tokenizer.eos_token_id
+                      or self.tokenizer.pad_token_id
+                      or 0)
+            bos = torch.full((batch_size, 1), bos_id,
+                             dtype=responses.dtype, device=responses.device)
+            output.meta_info['bos'] = bos
+
         if self._is_actor and recompute_log_prob:
             # we should always recompute old_log_probs when it is HybridEngine
             output.meta_info['micro_batch_size'] = self.config.rollout.log_prob_micro_batch_size
