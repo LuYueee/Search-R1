@@ -37,6 +37,8 @@ from verl.utils.import_utils import import_external_libs
 from verl.utils.model import compute_position_id_with_mask
 from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
+import numpy as np
+from types import SimpleNamespace
 
 from codetiming import Timer
 
@@ -142,7 +144,7 @@ class ActorRolloutRefWorker(Worker):
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(actor_model_config.model_type)
 
-        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
+        if use_remove_padding:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(actor_model_config, verbose=True)
 
@@ -466,6 +468,27 @@ class ActorRolloutRefWorker(Worker):
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
 
+        # collect logits and attentions for RIND reward
+        responses = output.batch['responses'].to('cuda')
+        with torch.no_grad():
+            with torch.autocast('cuda', dtype=torch.bfloat16):
+                rind_out = self.actor_module_fsdp(input_ids=responses,
+                                                  attention_mask=torch.ones_like(responses),
+                                                  use_cache=False,
+                                                  output_attentions=True)
+        logits = rind_out.logits
+        attn_layers = rind_out.attentions
+        non_tensor = {'generate_outputs': [], 'generated_tokens': []}
+        batch_size, seq_len = responses.shape
+        for b in range(batch_size):
+            scores = [logits[b, t].detach().cpu() for t in range(seq_len)]
+            attns = [layer[b].detach().cpu() for layer in attn_layers]
+            non_tensor['generate_outputs'].append(SimpleNamespace(scores=tuple(scores), attentions=tuple(attns)))
+            non_tensor['generated_tokens'].append(responses[b].detach().cpu())
+        for k, v in non_tensor.items():
+            non_tensor[k] = np.array(v, dtype=object)
+        output.non_tensor_batch.update(non_tensor)
+
         output = output.to('cpu')
 
         if self._is_offload_param:
@@ -608,7 +631,7 @@ class CriticWorker(Worker):
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(critic_model_config.model_type)
 
-        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
+        if use_remove_padding:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(critic_model_config, verbose=True)
 
@@ -847,7 +870,7 @@ class RewardModelWorker(Worker):
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(model_config.model_type)
 
-        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
+        if use_remove_padding:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(model_config, verbose=True)
 
