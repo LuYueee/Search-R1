@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import math
 import torch
 from typing import Optional, Tuple
 
@@ -99,39 +100,55 @@ def qwen2_flash_attn_forward(
         key_states = key_states.to(target_dtype)
         value_states = value_states.to(target_dtype)
 
-    # Reashape to the expected shape for Flash Attention
-    query_states = query_states.transpose(1, 2)
-    key_states = key_states.transpose(1, 2)
-    value_states = value_states.transpose(1, 2)
-
-    if (self.config.use_sliding_window and getattr(self.config, "sliding_window", None) is not None and
-            self.layer_idx >= self.config.max_window_layers):
-        sliding_window = self.config.sliding_window
+    if output_attentions:
+        # Manual scaled dot-product attention to obtain attn weights
+        attn_scores = torch.matmul(query_states, key_states.transpose(-2, -1))
+        attn_scores = attn_scores / math.sqrt(self.head_dim)
+        if self.is_causal:
+            causal_mask = torch.triu(
+                torch.ones(full_q_len, full_q_len, device=attn_scores.device, dtype=torch.bool), 1
+            )
+            attn_scores = attn_scores.masked_fill(causal_mask, float('-inf'))
+        attn_probs = torch.softmax(attn_scores, dim=-1)
+        attn_output = torch.matmul(attn_probs, value_states)
+        attn_output = attn_output.transpose(1, 2)
+        if ulysses_sp_size > 1:
+            attn_output = gather_heads_scatter_seq(attn_output, seq_dim=1, head_dim=2)
+        attn_output = attn_output.reshape(bsz, q_len, -1).contiguous()
+        attn_output = self.o_proj(attn_output)
+        attn_weights = attn_probs
+        return attn_output, attn_weights, past_key_value
     else:
-        sliding_window = None
+        # Reashape to the expected shape for Flash Attention
+        query_states = query_states.transpose(1, 2)
+        key_states = key_states.transpose(1, 2)
+        value_states = value_states.transpose(1, 2)
 
-    attn_output = _flash_attention_forward(
-        query_states,
-        key_states,
-        value_states,
-        attention_mask,
-        full_q_len,
-        position_ids=position_ids,
-        dropout=dropout_rate,
-        sliding_window=sliding_window,
-        is_causal=self.is_causal,
-        use_top_left_mask=self._flash_attn_uses_top_left_mask,
-    )
+        if (self.config.use_sliding_window and getattr(self.config, "sliding_window", None) is not None and
+                self.layer_idx >= self.config.max_window_layers):
+            sliding_window = self.config.sliding_window
+        else:
+            sliding_window = None
 
-    # use full_q_len to reshape
-    attn_output = attn_output.reshape(bsz, full_q_len, -1, self.head_dim).contiguous()
-    ########## AlltoAll for Ulysses ##########
-    if ulysses_sp_size > 1:
-        attn_output = gather_heads_scatter_seq(attn_output, seq_dim=1, head_dim=2)
-    attn_output = attn_output.reshape(bsz, q_len, -1).contiguous()
-    attn_output = self.o_proj(attn_output)
+        attn_output = _flash_attention_forward(
+            query_states,
+            key_states,
+            value_states,
+            attention_mask,
+            full_q_len,
+            position_ids=position_ids,
+            dropout=dropout_rate,
+            sliding_window=sliding_window,
+            is_causal=self.is_causal,
+            use_top_left_mask=self._flash_attn_uses_top_left_mask,
+        )
 
-    if not output_attentions:
+        # use full_q_len to reshape
+        attn_output = attn_output.reshape(bsz, full_q_len, -1, self.head_dim).contiguous()
+        ########## AlltoAll for Ulysses ##########
+        if ulysses_sp_size > 1:
+            attn_output = gather_heads_scatter_seq(attn_output, seq_dim=1, head_dim=2)
+        attn_output = attn_output.reshape(bsz, q_len, -1).contiguous()
+        attn_output = self.o_proj(attn_output)
         attn_weights = None
-
-    return attn_output, attn_weights, past_key_value
+        return attn_output, attn_weights, past_key_value
