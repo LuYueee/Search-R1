@@ -18,19 +18,23 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 from verl import DataProto
 import torch
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+from verl.utils.rind_reward import RINDCalculator, compute_sentence_end_rewards
 
 
 class RewardManager():
     """The reward manager.
     """
 
-    def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0.) -> None:
+    def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0., actor_module_for_reward=None, debug_rind=False) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine
         self.format_score = format_score
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.actor_module_for_reward = actor_module_for_reward
+        self.debug_rind = debug_rind
+        self.rind_calculator = RINDCalculator(tokenizer)
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -57,7 +61,24 @@ class RewardManager():
             sequences = torch.cat((valid_prompt_ids, response_ids[:valid_response_length]))
             sequences_str = self.tokenizer.decode(sequences)
 
-            rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            rewards = data_item.non_tensor_batch.get('sentence_rewards', None)
+            if rewards is None:
+                rind_scores = data_item.non_tensor_batch.get('rind_gen_scores', None)
+                rind_attn = data_item.non_tensor_batch.get('rind_attentions', None)
+                if rind_scores is not None:
+                    rewards = compute_sentence_end_rewards(
+                        rind_calc=self.rind_calculator,
+                        model=self.actor_module_for_reward,
+                        tokenizer=self.tokenizer,
+                        generated_tokens_ids=response_ids[:valid_response_length].tolist(),
+                        theta=1.2,
+                        solver='max',
+                        debug=self.debug_rind,
+                        rind_gen_scores=rind_scores,
+                        rind_attentions=rind_attn,
+                    )
+                else:
+                    rewards = []
             for pos, val in rewards:
                 if pos < valid_response_length:
                     reward_tensor[i, pos] = val
