@@ -37,9 +37,7 @@ from verl.utils.import_utils import import_external_libs
 from verl.utils.model import compute_position_id_with_mask
 from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
-import numpy as np
-import gc
-from verl.utils.rind_reward import RINDCalculator, compute_sentence_end_rewards
+from verl.utils.rind_reward import RINDCalculator
 
 from codetiming import Timer
 
@@ -471,22 +469,40 @@ class ActorRolloutRefWorker(Worker):
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
 
-        # compute sentence-level rewards on the fly
-        responses = output.batch['responses'].cpu()
-        sentence_rewards = np.empty(responses.size(0), dtype=object)
-        for b in range(responses.size(0)):
-            token_ids = responses[b]
-            rewards = compute_sentence_end_rewards(
-                self.rind_calculator,
-                self.actor_module_fsdp,
-                self.tokenizer,
-                token_ids.tolist(),
-                theta=1.2,
-            )
-            sentence_rewards[b] = rewards
-            gc.collect()
+        # === Teacher-forced forward pass to cache logits and attentions ===
+        prompts_ids = output.batch['prompts']
+        responses_ids = output.batch['responses']
+        full_input_ids = output.batch['input_ids'].cuda()
+        full_attn_mask = (full_input_ids != self.tokenizer.pad_token_id).to(full_input_ids.dtype)
 
-        output.non_tensor_batch['sentence_rewards'] = sentence_rewards
+        with torch.no_grad():
+            out = self.actor_module_fsdp(
+                input_ids=full_input_ids,
+                attention_mask=full_attn_mask,
+                use_cache=False,
+                output_attentions=True,
+            )
+
+        logits = out.logits.detach().cpu()
+        last_attn = out.attentions[-1].detach().cpu()
+
+        gen_scores_list = []
+        attn_list = []
+        pad_id = self.tokenizer.pad_token_id
+        for b in range(full_input_ids.size(0)):
+            prompt_len = int((prompts_ids[b] != pad_id).sum().item())
+            resp_len = int((responses_ids[b] != pad_id).sum().item())
+            st, ed = prompt_len, prompt_len + resp_len
+            step_logits = logits[b, st:ed, :]
+            step_scores = tuple(step_logits[i:i+1] for i in range(step_logits.size(0)))
+            gen_scores_list.append(step_scores)
+
+            attn = last_attn[b, :, st:ed, st:ed]
+            attn = attn / attn.sum(dim=-1, keepdim=True).clamp_min(1e-12)
+            attn_list.append(attn)
+
+        output.non_tensor_batch['rind_gen_scores'] = gen_scores_list
+        output.non_tensor_batch['rind_attentions'] = attn_list
 
         output = output.to('cpu')
 
