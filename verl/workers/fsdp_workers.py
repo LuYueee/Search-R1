@@ -39,7 +39,6 @@ from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
 import numpy as np
 import gc
-from verl.utils.rind_reward import RINDCalculator, compute_sentence_end_rewards
 
 from codetiming import Timer
 
@@ -353,8 +352,6 @@ class ActorRolloutRefWorker(Worker):
         if self._is_actor:
             self.flops_counter = FlopsCounter(self.actor_model_config)
 
-        self.rind_calculator = RINDCalculator(self.tokenizer)
-
         torch.cuda.empty_cache()
 
     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
@@ -471,22 +468,47 @@ class ActorRolloutRefWorker(Worker):
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
 
-        # compute sentence-level rewards on the fly
-        responses = output.batch['responses'].cpu()
-        sentence_rewards = np.empty(responses.size(0), dtype=object)
-        for b in range(responses.size(0)):
-            token_ids = responses[b]
-            rewards = compute_sentence_end_rewards(
-                self.rind_calculator,
-                self.actor_module_fsdp,
-                self.tokenizer,
-                token_ids.tolist(),
-                theta=1.2,
-            )
-            sentence_rewards[b] = rewards
-            gc.collect()
+        # === Teacher-forced forward to get attention and logits for generated tokens ===
+        responses = output.batch['responses']
+        prompts_ids = output.batch['prompts']
+        batch_size = responses.size(0)
+        full_input_ids = []
+        resp_slices = []
+        for b in range(batch_size):
+            prompt_ids = prompts_ids[b]
+            resp_ids = responses[b]
+            full_ids = torch.cat([prompt_ids, resp_ids], dim=0)
+            full_input_ids.append(full_ids)
+            resp_slices.append((prompt_ids.size(0), full_ids.size(0)))
 
-        output.non_tensor_batch['sentence_rewards'] = sentence_rewards
+        pad_id = self.tokenizer.pad_token_id
+        full_input = torch.nn.utils.rnn.pad_sequence(
+            full_input_ids, batch_first=True, padding_value=pad_id
+        )
+        attn_mask = (full_input != pad_id).to(full_input.dtype)
+
+        with torch.no_grad():
+            out = self.actor_module_fsdp(
+                input_ids=full_input,
+                attention_mask=attn_mask,
+                use_cache=False,
+                output_attentions=True,
+            )
+
+        logits = out.logits.detach().cpu()
+        attn_all = out.attentions[-1].detach().cpu()
+
+        gen_scores = np.empty(batch_size, dtype=object)
+        gen_attn = np.empty(batch_size, dtype=object)
+        for b, (st, ed) in enumerate(resp_slices):
+            step_logits = logits[b, st:ed, :]
+            gen_scores[b] = tuple(step_logits[i:i + 1] for i in range(step_logits.size(0)))
+            gen_attn[b] = attn_all[b, :, st:ed, st:ed]
+
+        output.non_tensor_batch['rind_gen_scores'] = gen_scores
+        output.non_tensor_batch['rind_attentions'] = gen_attn
+
+        gc.collect()
 
         output = output.to('cpu')
 
