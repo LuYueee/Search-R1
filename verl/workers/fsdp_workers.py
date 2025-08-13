@@ -471,22 +471,48 @@ class ActorRolloutRefWorker(Worker):
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
 
-        # compute sentence-level rewards on the fly
-        responses = output.batch['responses'].cpu()
+        # compute logits and attentions for the full sequences to derive RIND scores
+        seq = output.batch['input_ids']
+        attn_mask = output.batch['attention_mask']
+        with torch.no_grad():
+            with torch.autocast(self.actor_module_fsdp.device.type, dtype=torch.bfloat16):
+                out = self.actor_module_fsdp(
+                    input_ids=seq,
+                    attention_mask=attn_mask,
+                    use_cache=False,
+                    output_attentions=True,
+                )
+        logits = out.logits.detach().cpu()
+        attn = out.attentions[-1].detach().cpu()
+        prompt_len = output.batch['prompts'].size(1)
+        responses = output.batch['responses']
+        responses_cpu = responses.cpu()
         sentence_rewards = np.empty(responses.size(0), dtype=object)
+        rind_gen_scores = []
         for b in range(responses.size(0)):
-            token_ids = responses[b]
+            resp_mask = attn_mask[b, prompt_len:]
+            resp_len = int(resp_mask.sum().item())
+            step_logits = logits[b, prompt_len:prompt_len + resp_len, :]
+            score_tuple = tuple(step_logits[i:i+1] for i in range(resp_len))
+            rind_gen_scores.append(score_tuple)
+            attn_full = attn[b, :, prompt_len:prompt_len + resp_len, prompt_len:prompt_len + resp_len]
+            token_ids = responses_cpu[b, :resp_len].tolist()
             rewards = compute_sentence_end_rewards(
                 self.rind_calculator,
-                self.actor_module_fsdp,
-                self.tokenizer,
-                token_ids.tolist(),
+                model=None,
+                tokenizer=self.tokenizer,
+                generated_tokens_ids=token_ids,
                 theta=1.2,
+                solver='max',
+                rind_gen_scores=score_tuple,
+                attn_full=attn_full,
             )
             sentence_rewards[b] = rewards
-            gc.collect()
-
         output.non_tensor_batch['sentence_rewards'] = sentence_rewards
+        output.non_tensor_batch['rind_gen_scores'] = rind_gen_scores
+        del out, logits, attn
+        torch.cuda.empty_cache()
+        gc.collect()
 
         output = output.to('cpu')
 
