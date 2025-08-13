@@ -18,6 +18,7 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 from verl import DataProto
 import torch
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+from verl.utils.rind_reward import RINDCalculator, compute_sentence_end_rewards
 
 
 class RewardManager():
@@ -31,6 +32,8 @@ class RewardManager():
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.rind_calculator = RINDCalculator(tokenizer)
+        self.debug_rind = False
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -57,7 +60,19 @@ class RewardManager():
             sequences = torch.cat((valid_prompt_ids, response_ids[:valid_response_length]))
             sequences_str = self.tokenizer.decode(sequences)
 
-            rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            rind_scores = data_item.non_tensor_batch.get('rind_gen_scores')
+            rind_attn = data_item.non_tensor_batch.get('rind_attentions')
+            rewards = compute_sentence_end_rewards(
+                rind_calc=self.rind_calculator,
+                model=None,
+                tokenizer=self.tokenizer,
+                generated_tokens_ids=response_ids[:valid_response_length].tolist(),
+                theta=1.2,
+                solver='max',
+                debug=self.debug_rind,
+                rind_gen_scores=rind_scores,
+                rind_attentions=rind_attn,
+            )
             for pos, val in rewards:
                 if pos < valid_response_length:
                     reward_tensor[i, pos] = val

@@ -92,7 +92,17 @@ class RINDCalculator:
 
         return rind_list
 
-def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids, theta=1.2, solver='max', debug=False):
+def compute_sentence_end_rewards(
+    rind_calc,
+    model,
+    tokenizer,
+    generated_tokens_ids,
+    theta=1.2,
+    solver='max',
+    debug=False,
+    rind_gen_scores=None,
+    rind_attentions=None,
+):
     """Return a list of (token_idx, reward) for each sentence in the sequence."""
     resp_text = tokenizer.decode(generated_tokens_ids, skip_special_tokens=True)
     doc = rind_calc.nlp(resp_text)
@@ -114,30 +124,45 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
     encoding = tokenizer(resp_text, return_offsets_mapping=True, add_special_tokens=False)
     offsets = encoding["offset_mapping"]
     rewards = []
-    token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
 
-    with torch.no_grad():
-        with torch.autocast(model.device.type, dtype=torch.bfloat16):
-            out = model(
-                input_ids=token_tensor.unsqueeze(0),
-                attention_mask=torch.ones_like(token_tensor).unsqueeze(0),
-                use_cache=False,
-                output_attentions=True,
-            )
+    entropies_full = None
+    attn_full = None
+    if rind_gen_scores is not None:
+        step_logits = [t.squeeze(0).float() for t in rind_gen_scores]
+        if len(step_logits) > 0:
+            logits = torch.stack(step_logits, dim=0)
+            logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
+            probs = torch.exp(logits - logsumexp)
+            entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
+    if rind_attentions is not None:
+        attn_full = rind_attentions.float()
+        attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
+        attn_full = attn_full.cpu()
 
-    logits = out.logits[0].float()
-    # compute token entropies without materializing log-probs on CPU
-    logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
-    probs = torch.exp(logits - logsumexp)
-    entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
+    if entropies_full is None or attn_full is None:
+        if model is None:
+            raise ValueError("Model required when cached scores or attentions are missing")
+        token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
+        with torch.no_grad():
+            with torch.autocast(model.device.type, dtype=torch.bfloat16):
+                out = model(
+                    input_ids=token_tensor.unsqueeze(0),
+                    attention_mask=torch.ones_like(token_tensor).unsqueeze(0),
+                    use_cache=False,
+                    output_attentions=True,
+                )
+        logits = out.logits[0].float()
+        logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
+        probs = torch.exp(logits - logsumexp)
+        entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
 
-    attn_full = out.attentions[-1][0].float()
-    attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
-    attn_full = attn_full.cpu()
+        attn_full = out.attentions[-1][0].float()
+        attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
+        attn_full = attn_full.cpu()
 
-    del out, logits, logsumexp, probs
-    torch.cuda.empty_cache()
-    gc.collect()
+        del out, logits, logsumexp, probs
+        torch.cuda.empty_cache()
+        gc.collect()
 
     for sent in sentences:
         start_pos = resp_text.find(sent)
