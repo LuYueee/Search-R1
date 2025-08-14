@@ -122,7 +122,7 @@ def qwen2_flash_attn_forward(
                 torch.ones(q_len, q_len, device=attn_weights.device, dtype=torch.bool), 1
             )
             attn_weights = attn_weights.masked_fill(causal_mask, float("-inf"))
-        attn_weights = torch.softmax(attn_weights, dim=-1, dtype=torch.float32).to(q.dtype)
+        attn_weights = torch.softmax(attn_weights, dim=-1)
         if dropout_rate > 0.0:
             attn_weights = torch.nn.functional.dropout(attn_weights, p=dropout_rate, training=self.training)
         attn_output = torch.matmul(attn_weights, v).transpose(1, 2)
