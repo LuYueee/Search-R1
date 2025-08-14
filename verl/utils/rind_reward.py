@@ -29,27 +29,30 @@ class RINDCalculator:
         """Compute RIND scores given attention weights and token entropies.
 
         Args:
-            attn_tensor: Tensor of shape [num_heads, L, L]
+            attn_tensor: Tensor of shape [num_heads, L, L] or [L]
             generated_tokens_ids: 1D tensor/list of token ids of length L
             entropies: Iterable of precomputed entropy values length L
         """
         gen_tokens = self.tokenizer.convert_ids_to_tokens(generated_tokens_ids)
         gen_len = len(generated_tokens_ids)
-        attn_tensor = attn_tensor.float().cpu()
+        attn_tensor = torch.as_tensor(attn_tensor, dtype=torch.float32).cpu()
         entropies = list(entropies)
 
-        if solver == 'max':
-            head_max, _ = torch.max(attn_tensor, dim=1)
-            mean_atten = torch.mean(head_max, dim=0)
-        elif solver == 'avg':
-            head_sum = torch.sum(attn_tensor, dim=1)
-            mean_atten = torch.mean(head_sum, dim=0)
-            for i in range(gen_len):
-                mean_atten[i] /= (gen_len - i)
-        elif solver == 'last_token':
-            mean_atten = torch.mean(attn_tensor[:, -1], dim=0)
+        if attn_tensor.dim() == 1:
+            mean_atten = attn_tensor
         else:
-            raise ValueError(f"Unknown solver: {solver}")
+            if solver == 'max':
+                head_max, _ = torch.max(attn_tensor, dim=1)
+                mean_atten = torch.mean(head_max, dim=0)
+            elif solver == 'avg':
+                head_sum = torch.sum(attn_tensor, dim=1)
+                mean_atten = torch.mean(head_sum, dim=0)
+                for i in range(gen_len):
+                    mean_atten[i] /= (gen_len - i)
+            elif solver == 'last_token':
+                mean_atten = torch.mean(attn_tensor[:, -1], dim=0)
+            else:
+                raise ValueError(f"Unknown solver: {solver}")
 
         spans = []
         for i, t in enumerate(gen_tokens):
@@ -92,7 +95,8 @@ class RINDCalculator:
 
         return rind_list
 
-def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids, theta=1.2, solver='max', debug=False):
+def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids, theta=1.2, solver='max', debug=False,
+                                 rind_entropies=None, rind_mean_attentions=None):
     """Return a list of (token_idx, reward) for each sentence in the sequence."""
     resp_text = tokenizer.decode(generated_tokens_ids, skip_special_tokens=True)
     doc = rind_calc.nlp(resp_text)
@@ -114,30 +118,37 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
     encoding = tokenizer(resp_text, return_offsets_mapping=True, add_special_tokens=False)
     offsets = encoding["offset_mapping"]
     rewards = []
-    token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
 
-    with torch.no_grad():
-        with torch.autocast(model.device.type, dtype=torch.bfloat16):
-            out = model(
-                input_ids=token_tensor.unsqueeze(0),
-                attention_mask=torch.ones_like(token_tensor).unsqueeze(0),
-                use_cache=False,
-                output_attentions=True,
-            )
+    entropies_full = None
+    mean_atten_full = None
+    if rind_entropies is not None and rind_mean_attentions is not None:
+        entropies_full = torch.as_tensor(rind_entropies, dtype=torch.float32).cpu()
+        mean_atten_full = torch.as_tensor(rind_mean_attentions, dtype=torch.float32).cpu()
+    else:
+        assert model is not None, "model is required when cached entropies or attentions are missing"
+        token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
+        T = token_tensor.size(0)
+        with torch.no_grad():
+            with torch.autocast(model.device.type, dtype=torch.bfloat16):
+                out = model(
+                    input_ids=token_tensor.unsqueeze(0),
+                    attention_mask=torch.ones_like(token_tensor).unsqueeze(0),
+                    use_cache=False,
+                    output_attentions=True,
+                )
+        resp_logits = out.logits[0, :T, :].to(torch.float32)
+        lse = torch.logsumexp(resp_logits, dim=-1)
+        probs = torch.softmax(resp_logits, dim=-1)
+        entropies_full = (lse - (probs * resp_logits).sum(dim=-1)).cpu()
 
-    logits = out.logits[0].float()
-    # compute token entropies without materializing log-probs on CPU
-    logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
-    probs = torch.exp(logits - logsumexp)
-    entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
+        attn = out.attentions[-1][0, :, :T, :T]
+        attn = attn / attn.sum(dim=-1, keepdim=True).clamp_min(1e-12)
+        head_max = attn.max(dim=2).values
+        mean_atten_full = head_max.mean(dim=0).cpu()
 
-    attn_full = out.attentions[-1][0].float()
-    attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
-    attn_full = attn_full.cpu()
-
-    del out, logits, logsumexp, probs
-    torch.cuda.empty_cache()
-    gc.collect()
+        del out
+        torch.cuda.empty_cache()
+        gc.collect()
 
     for sent in sentences:
         start_pos = resp_text.find(sent)
@@ -151,7 +162,7 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
         if not token_idxs:
             continue
         start_idx, end_idx = token_idxs[0], token_idxs[-1]
-        sub_attn = attn_full[:, start_idx: end_idx + 1, start_idx: end_idx + 1]
+        sub_attn = mean_atten_full[start_idx: end_idx + 1]
         sub_ents = entropies_full[start_idx: end_idx + 1].tolist()
         sent_ids = generated_tokens_ids[start_idx: end_idx + 1]
         rind_list = rind_calc.compute_rind_from_attn_entropy(sub_attn, sent_ids, sub_ents, solver=solver)
@@ -174,5 +185,5 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
         if debug:
             print(f"Sentence:\n {sent}\n  MaxRIND={M:.4f}, Action={action}, Reward={reward}")
 
-    del attn_full, entropies_full
+    del mean_atten_full, entropies_full
     return rewards
