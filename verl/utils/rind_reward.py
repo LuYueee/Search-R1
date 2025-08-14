@@ -141,7 +141,34 @@ def compute_sentence_end_rewards(
 
     resp_text, offsets = build_offsets_from_ids(tokenizer, generated_tokens_ids)
     doc = rind_calc.nlp(resp_text)
-    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+
+    raw_sents = []
+    for span in doc.sents:
+        text = span.text
+        start = span.start_char
+        end = span.end_char
+        lead = len(text) - len(text.lstrip())
+        trail = len(text) - len(text.rstrip())
+        text = text.strip()
+        if not text:
+            continue
+        raw_sents.append((text, start + lead, end - trail))
+
+    # match isolated closing tag sentences like </think>, </answer>, etc.
+    CLOSE_TAG_RE = re.compile(r'^</\s*(think|answer|search|information)\s*>\s*$', re.I)
+    SEARCH_RE = re.compile(r'<\s*search\s*>', re.I)
+    ANSWER_RE = re.compile(r'<\s*answer\s*>', re.I)
+    sentences = []  # items are (text, start, end) with leading/trailing spaces removed
+    for text, s, e in raw_sents:
+        if CLOSE_TAG_RE.fullmatch(text):
+            # merge isolated closing tags into the previous sentence
+            if sentences:
+                prev_text, prev_s, _ = sentences[-1]
+                sentences[-1] = (prev_text + text, prev_s, e)
+            else:
+                sentences.append((text, s, e))
+        else:
+            sentences.append((text, s, e))
 
     skip_spans = []
     for tag in ("search", "information", "answer"):
@@ -210,9 +237,7 @@ def compute_sentence_end_rewards(
     torch.cuda.empty_cache()
     gc.collect()
 
-    for sent in sentences:
-        start_pos = resp_text.find(sent)
-        end_pos = start_pos + len(sent)
+    for idx, (sent, start_pos, end_pos) in enumerate(sentences):
         if any(f"<{tag}" in sent for tag in ("search", "information", "answer")) or any(s <= start_pos < e for s, e in skip_spans):
             if debug:
                 print(f"Skip tagged sentence:\n {sent} -> reward 0")
@@ -234,10 +259,15 @@ def compute_sentence_end_rewards(
         rind_list = rind_calc.compute_rind_from_attn_entropy(sub_attn, sent_ids, sub_ents, solver=solver)
         M = max((r for _, r, *_ in rind_list), default=0.0)
 
-        tail = resp_text[end_pos:]
-        if re.match(r'\s*<search>', tail):
+        j = idx + 1
+        # skip any immediately following sentences that are only closing tags
+        while j < len(sentences) and CLOSE_TAG_RE.fullmatch(sentences[j][0]):
+            j += 1
+        next_sent = sentences[j][0] if j < len(sentences) else ""
+        # determine next action by scanning for tags anywhere in the next sentence
+        if SEARCH_RE.search(next_sent):
             action = 'SEARCH'
-        elif re.match(r'\s*<answer>', tail):
+        elif ANSWER_RE.search(next_sent):
             action = 'ANSWER'
         else:
             action = 'CONTINUE_THINK'
