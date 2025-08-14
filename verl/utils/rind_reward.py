@@ -3,8 +3,25 @@ import spacy
 import re
 import gc
 
+from verl.utils.torch_functional import entropy_from_logits
+
 
 ALLOWED_POS = {"NOUN", "ADJ", "VERB", "PROPN", "NUM"}
+
+
+def build_offsets_from_ids(tokenizer, ids):
+    pieces = tokenizer.convert_ids_to_tokens(ids)
+    offsets = []
+    pos = 0
+    segments = []
+    for tok in pieces:
+        seg = tokenizer.convert_tokens_to_string([tok])
+        segments.append(seg)
+        start, end = pos, pos + len(seg)
+        offsets.append((start, end))
+        pos = end
+    text = "".join(segments)
+    return text, offsets
 
 class RINDCalculator:
     def __init__(self, tokenizer):
@@ -33,6 +50,8 @@ class RINDCalculator:
             generated_tokens_ids: 1D tensor/list of token ids of length L
             entropies: Iterable of precomputed entropy values length L
         """
+        if attn_tensor is None or attn_tensor.numel() == 0 or attn_tensor.shape[1] == 0:
+            return []
         gen_tokens = self.tokenizer.convert_ids_to_tokens(generated_tokens_ids)
         gen_len = len(generated_tokens_ids)
         attn_tensor = attn_tensor.float().cpu()
@@ -92,9 +111,19 @@ class RINDCalculator:
 
         return rind_list
 
-def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids, theta=1.2, solver='max', debug=False):
+def compute_sentence_end_rewards(
+    rind_calc,
+    model,
+    tokenizer,
+    prompt_tokens_ids,
+    generated_tokens_ids,
+    theta=1.2,
+    solver='max',
+    debug=False,
+):
     """Return a list of (token_idx, reward) for each sentence in the sequence."""
-    resp_text = tokenizer.decode(generated_tokens_ids, skip_special_tokens=True)
+
+    resp_text, offsets = build_offsets_from_ids(tokenizer, generated_tokens_ids)
     doc = rind_calc.nlp(resp_text)
     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
 
@@ -111,31 +140,47 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
             merged[-1][1] = max(merged[-1][1], e)
     skip_spans = merged
 
-    encoding = tokenizer(resp_text, return_offsets_mapping=True, add_special_tokens=False)
-    offsets = encoding["offset_mapping"]
     rewards = []
-    token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
+    L = len(generated_tokens_ids)
 
+    # Step 1: compute attention on the generated tokens only
+    token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
     with torch.no_grad():
         with torch.autocast(model.device.type, dtype=torch.bfloat16):
-            out = model(
+            attn_out = model(
                 input_ids=token_tensor.unsqueeze(0),
                 attention_mask=torch.ones_like(token_tensor).unsqueeze(0),
                 use_cache=False,
                 output_attentions=True,
             )
 
-    logits = out.logits[0].float()
-    # compute token entropies without materializing log-probs on CPU
-    logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
-    probs = torch.exp(logits - logsumexp)
-    entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
-
-    attn_full = out.attentions[-1][0].float()
+    attn_full = attn_out.attentions[-1][0].float()
     attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
     attn_full = attn_full.cpu()
 
-    del out, logits, logsumexp, probs
+    del attn_out
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    # Step 2: teacher-forced forward on full context to compute token entropies
+    full_ids = torch.tensor(prompt_tokens_ids + generated_tokens_ids, device=model.device, dtype=torch.long)[None, :]
+    attn_mask = torch.ones_like(full_ids, device=model.device)
+    resp_len = len(generated_tokens_ids)
+
+    with torch.no_grad():
+        with torch.autocast(model.device.type, dtype=torch.bfloat16):
+            out = model(
+                input_ids=full_ids,
+                attention_mask=attn_mask,
+                use_cache=False,
+                output_attentions=False,
+                num_logits_to_keep=resp_len,
+            )
+
+    step_logits = out.logits[0].float()
+    entropies_full = entropy_from_logits(step_logits).cpu()
+
+    del out, step_logits
     torch.cuda.empty_cache()
     gc.collect()
 
@@ -147,11 +192,17 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
                 print(f"Skip tagged sentence:\n {sent} -> reward 0")
             continue
 
-        token_idxs = [i for i, (s, e) in enumerate(offsets) if s >= start_pos and e <= end_pos]
+        token_idxs = [i for i, (s, e) in enumerate(offsets) if 0 <= i < L and s >= start_pos and e <= end_pos]
         if not token_idxs:
             continue
         start_idx, end_idx = token_idxs[0], token_idxs[-1]
+        start_idx = max(0, min(start_idx, L - 1))
+        end_idx = max(0, min(end_idx, L - 1))
+        if end_idx < start_idx:
+            continue
         sub_attn = attn_full[:, start_idx: end_idx + 1, start_idx: end_idx + 1]
+        if sub_attn.shape[1] == 0:
+            continue
         sub_ents = entropies_full[start_idx: end_idx + 1].tolist()
         sent_ids = generated_tokens_ids[start_idx: end_idx + 1]
         rind_list = rind_calc.compute_rind_from_attn_entropy(sub_attn, sent_ids, sub_ents, solver=solver)
