@@ -92,9 +92,29 @@ class HFRollout(BaseRollout):
                     pad_token_id=pad_token_id,
                     generation_config=generation_config,
                     # renormalize_logits=True,
-                    output_scores=False,  # this is potentially very large
+                    # cache per-token logits so that downstream modules can
+                    # reuse them to compute generation entropy without an
+                    # additional forward pass
+                    output_scores=True,
                     return_dict_in_generate=True,
                     use_cache=True)
+        # compute token-level entropies from cached scores to avoid recomputing
+        # logits later during reward calculation
+        scores = output.scores  # tuple of length = generated tokens
+        if scores is not None and len(scores) > 0:
+            logits = torch.stack(scores, dim=1).float()  # (bs, gen_len, vocab)
+            logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
+            probs = torch.exp(logits - logsumexp)
+            entropies = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1))
+            gen_len = entropies.size(1)
+            if gen_len < response_length:
+                pad = torch.zeros(batch_size, response_length - gen_len,
+                                  device=entropies.device)
+                entropies = torch.cat([entropies, pad], dim=1)
+            token_entropies = entropies.cpu().numpy()
+        else:
+            token_entropies = None
+
         # TODO: filter out the seq with no answers like ds-chat
         seq = output.sequences
 
@@ -137,4 +157,9 @@ class HFRollout(BaseRollout):
         torch.cuda.empty_cache()
 
         self.module.train()
-        return DataProto(batch=batch)
+
+        non_tensor = {}
+        if token_entropies is not None:
+            non_tensor['token_entropies'] = token_entropies
+
+        return DataProto(batch=batch, non_tensor_batch=non_tensor)

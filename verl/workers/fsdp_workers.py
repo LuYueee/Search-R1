@@ -473,19 +473,23 @@ class ActorRolloutRefWorker(Worker):
 
         # compute sentence-level rewards on the fly
         responses = output.batch['responses'].cpu()
+        cached_entropies = output.non_tensor_batch.get('token_entropies')
         sentence_rewards = np.empty(responses.size(0), dtype=object)
         for b in range(responses.size(0)):
             token_ids = responses[b]
+            ents = cached_entropies[b] if cached_entropies is not None else None
             rewards = compute_sentence_end_rewards(
                 self.rind_calculator,
                 self.actor_module_fsdp,
                 self.tokenizer,
                 token_ids.tolist(),
                 theta=1.2,
+                entropies=ents,
             )
             sentence_rewards[b] = rewards
             gc.collect()
 
+        output.non_tensor_batch.pop('token_entropies', None)
         output.non_tensor_batch['sentence_rewards'] = sentence_rewards
 
         output = output.to('cpu')

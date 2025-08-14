@@ -92,8 +92,13 @@ class RINDCalculator:
 
         return rind_list
 
-def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids, theta=1.2, solver='max', debug=False):
-    """Return a list of (token_idx, reward) for each sentence in the sequence."""
+def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids,
+                                 theta=1.2, solver='max', debug=False,
+                                 entropies=None):
+    """Return a list of (token_idx, reward) for each sentence in the sequence.
+
+    If ``entropies`` is provided, logits are not recomputed.
+    """
     resp_text = tokenizer.decode(generated_tokens_ids, skip_special_tokens=True)
     doc = rind_calc.nlp(resp_text)
     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
@@ -125,17 +130,20 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
                 output_attentions=True,
             )
 
-    logits = out.logits[0].float()
-    # compute token entropies without materializing log-probs on CPU
-    logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
-    probs = torch.exp(logits - logsumexp)
-    entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
-
     attn_full = out.attentions[-1][0].float()
     attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
     attn_full = attn_full.cpu()
 
-    del out, logits, logsumexp, probs
+    if entropies is None:
+        logits = out.logits[0].float()
+        logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
+        probs = torch.exp(logits - logsumexp)
+        entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
+        del logits, logsumexp, probs
+    else:
+        entropies_full = torch.as_tensor(entropies, dtype=torch.float32)
+
+    del out
     torch.cuda.empty_cache()
     gc.collect()
 
