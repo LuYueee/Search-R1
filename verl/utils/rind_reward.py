@@ -141,7 +141,27 @@ def compute_sentence_end_rewards(
 
     resp_text, offsets = build_offsets_from_ids(tokenizer, generated_tokens_ids)
     doc = rind_calc.nlp(resp_text)
-    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+
+    raw_sents = []
+    for span in doc.sents:
+        text = span.text
+        start = span.start_char
+        end = span.end_char
+        raw_sents.append((text, start, end))
+
+    close_tag_re = re.compile(r"^\s*</(think|answer|search|information)>\s*$", re.I)
+    sentences = []
+    for text, start, end in raw_sents:
+        if close_tag_re.fullmatch(text):
+            if sentences:
+                prev_text, prev_start, prev_end = sentences[-1]
+                sentences[-1] = (prev_text + text, prev_start, end)
+            else:
+                sentences.append((text.strip(), start, end))
+        else:
+            lstrip = len(text) - len(text.lstrip())
+            rstrip = len(text) - len(text.rstrip())
+            sentences.append((text.strip(), start + lstrip, end - rstrip))
 
     skip_spans = []
     for tag in ("search", "information", "answer"):
@@ -210,9 +230,10 @@ def compute_sentence_end_rewards(
     torch.cuda.empty_cache()
     gc.collect()
 
-    for sent in sentences:
-        start_pos = resp_text.find(sent)
-        end_pos = start_pos + len(sent)
+    search_re = re.compile(r"<\s*search\s*>", re.I)
+    answer_re = re.compile(r"<\s*answer\s*>", re.I)
+
+    for i, (sent, start_pos, end_pos) in enumerate(sentences):
         if any(f"<{tag}" in sent for tag in ("search", "information", "answer")) or any(s <= start_pos < e for s, e in skip_spans):
             if debug:
                 print(f"Skip tagged sentence:\n {sent} -> reward 0")
@@ -234,10 +255,14 @@ def compute_sentence_end_rewards(
         rind_list = rind_calc.compute_rind_from_attn_entropy(sub_attn, sent_ids, sub_ents, solver=solver)
         M = max((r for _, r, *_ in rind_list), default=0.0)
 
-        tail = resp_text[end_pos:]
-        if re.match(r'\s*<search>', tail):
+        j = i + 1
+        while j < len(sentences) and close_tag_re.fullmatch(sentences[j][0]):
+            j += 1
+        next_sent = sentences[j][0] if j < len(sentences) else ""
+
+        if search_re.search(next_sent):
             action = 'SEARCH'
-        elif re.match(r'\s*<answer>', tail):
+        elif answer_re.search(next_sent):
             action = 'ANSWER'
         else:
             action = 'CONTINUE_THINK'
