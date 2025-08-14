@@ -19,6 +19,7 @@ import logging
 import os
 import warnings
 
+import numpy as np
 import torch
 import torch.distributed
 import verl.utils.hdfs_io as hdfs_io
@@ -37,9 +38,7 @@ from verl.utils.import_utils import import_external_libs
 from verl.utils.model import compute_position_id_with_mask
 from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
-import numpy as np
-import gc
-from verl.utils.rind_reward import RINDCalculator, compute_sentence_end_rewards
+from verl.utils.rind_reward import RINDCalculator
 
 from codetiming import Timer
 
@@ -471,22 +470,44 @@ class ActorRolloutRefWorker(Worker):
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
 
-        # compute sentence-level rewards on the fly
-        responses = output.batch['responses'].cpu()
-        sentence_rewards = np.empty(responses.size(0), dtype=object)
-        for b in range(responses.size(0)):
-            token_ids = responses[b]
-            rewards = compute_sentence_end_rewards(
-                self.rind_calculator,
-                self.actor_module_fsdp,
-                self.tokenizer,
-                token_ids.tolist(),
-                theta=1.2,
-            )
-            sentence_rewards[b] = rewards
-            gc.collect()
+        # === Teacher-forced forward pass to cache logits and attentions ===
+        prompts_ids = output.batch['prompts']
+        responses_ids = output.batch['responses']
+        full_input_ids = output.batch['input_ids'].cuda()
+        full_attn_mask = (full_input_ids != self.tokenizer.pad_token_id).to(full_input_ids.dtype)
 
-        output.non_tensor_batch['sentence_rewards'] = sentence_rewards
+        with torch.no_grad(), torch.autocast(device_type=full_input_ids.device.type, dtype=torch.bfloat16):
+            out = self.actor_module_fsdp(
+                input_ids=full_input_ids,
+                attention_mask=full_attn_mask,
+                use_cache=False,
+                output_attentions=True,
+            )
+
+        logits = out.logits
+        last_attn = out.attentions[-1]
+
+        entropies_list = []
+        mean_attn_list = []
+        pad_id = self.tokenizer.pad_token_id
+        for b in range(full_input_ids.size(0)):
+            prompt_len = int((prompts_ids[b] != pad_id).sum().item())
+            resp_len = int((responses_ids[b] != pad_id).sum().item())
+            st, ed = prompt_len, prompt_len + resp_len
+            resp_logits = logits[b, st:ed, :].to(torch.float32)
+            lse = torch.logsumexp(resp_logits, dim=-1)
+            probs = torch.softmax(resp_logits, dim=-1)
+            ent = (lse - (probs * resp_logits).sum(dim=-1)).to(torch.float16)
+            entropies_list.append(ent.cpu().numpy())
+
+            attn = last_attn[b, :, st:ed, st:ed]
+            attn = attn / attn.sum(dim=-1, keepdim=True).clamp_min(1e-12)
+            head_max = attn.max(dim=-1).values
+            mean_attn = head_max.mean(dim=0).to(torch.float16)
+            mean_attn_list.append(mean_attn.cpu().numpy())
+
+        output.non_tensor_batch['rind_entropies'] = np.array(entropies_list, dtype=object)
+        output.non_tensor_batch['rind_mean_attentions'] = np.array(mean_attn_list, dtype=object)
 
         output = output.to('cpu')
 
