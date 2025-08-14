@@ -92,8 +92,30 @@ class RINDCalculator:
 
         return rind_list
 
-def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids, theta=1.2, solver='max', debug=False):
-    """Return a list of (token_idx, reward) for each sentence in the sequence."""
+def compute_sentence_end_rewards(
+        rind_calc,
+        model,
+        tokenizer,
+        generated_tokens_ids,
+        entropies,
+        theta=1.2,
+        solver='max',
+        debug=False):
+    """Return a list of (token_idx, reward) for each sentence in the sequence.
+
+    Args:
+        rind_calc: ``RINDCalculator`` instance.
+        model: Language model used to obtain attention weights.
+        tokenizer: Tokenizer corresponding to the model.
+        generated_tokens_ids: List of ids for the generated response.
+        entropies: Iterable of precomputed token entropies for the response
+            tokens.  These should correspond to the same ``generated_tokens_ids``
+            and are typically computed from a teacher-forced forward pass with
+            the full prompt + response context.
+        theta: Reward threshold.
+        solver: Aggregation method for RIND calculation.
+        debug: Whether to print debug information.
+    """
     resp_text = tokenizer.decode(generated_tokens_ids, skip_special_tokens=True)
     doc = rind_calc.nlp(resp_text)
     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
@@ -125,17 +147,13 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
                 output_attentions=True,
             )
 
-    logits = out.logits[0].float()
-    # compute token entropies without materializing log-probs on CPU
-    logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
-    probs = torch.exp(logits - logsumexp)
-    entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
-
     attn_full = out.attentions[-1][0].float()
     attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
     attn_full = attn_full.cpu()
 
-    del out, logits, logsumexp, probs
+    entropies_full = torch.as_tensor(entropies, dtype=torch.float32).cpu()
+
+    del out
     torch.cuda.empty_cache()
     gc.collect()
 

@@ -471,8 +471,37 @@ class ActorRolloutRefWorker(Worker):
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
 
-        # compute sentence-level rewards on the fly
+        # compute token entropies with full context
+        prompts_cpu = output.batch['prompts'].cpu()
         responses = output.batch['responses'].cpu()
+        token_entropy_list = []
+        model_device = next(self.actor_module_fsdp.parameters()).device
+        for b in range(responses.size(0)):
+            prompt_ids = prompts_cpu[b].tolist()
+            resp_ids = responses[b].tolist()
+            full_ids = torch.tensor(prompt_ids + resp_ids,
+                                    device=model_device,
+                                    dtype=torch.long)[None, :]
+            attn_mask = torch.ones_like(full_ids, device=model_device)
+            resp_len = len(resp_ids)
+            with torch.no_grad():
+                with torch.autocast(model_device.type, dtype=torch.bfloat16):
+                    out = self.actor_module_fsdp(
+                        input_ids=full_ids,
+                        attention_mask=attn_mask,
+                        use_cache=False,
+                        output_attentions=False,
+                        num_logits_to_keep=resp_len,
+                    )
+            step_logits = out.logits[0].float()
+            token_ent = verl_F.entropy_from_logits(step_logits)
+            token_entropy_list.append(token_ent.cpu().numpy())
+            del out, step_logits, token_ent
+            torch.cuda.empty_cache()
+
+        output.non_tensor_batch['token_entropies'] = np.array(token_entropy_list, dtype=object)
+
+        # compute sentence-level rewards on the fly
         sentence_rewards = np.empty(responses.size(0), dtype=object)
         for b in range(responses.size(0)):
             token_ids = responses[b]
@@ -481,6 +510,7 @@ class ActorRolloutRefWorker(Worker):
                 self.actor_module_fsdp,
                 self.tokenizer,
                 token_ids.tolist(),
+                token_entropy_list[b],
                 theta=1.2,
             )
             sentence_rewards[b] = rewards
