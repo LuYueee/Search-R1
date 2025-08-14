@@ -3,6 +3,8 @@ import spacy
 import re
 import gc
 
+from verl.utils.torch_functional import entropy_from_logits
+
 
 ALLOWED_POS = {"NOUN", "ADJ", "VERB", "PROPN", "NUM"}
 
@@ -92,8 +94,18 @@ class RINDCalculator:
 
         return rind_list
 
-def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_ids, theta=1.2, solver='max', debug=False):
+def compute_sentence_end_rewards(
+    rind_calc,
+    model,
+    tokenizer,
+    prompt_tokens_ids,
+    generated_tokens_ids,
+    theta=1.2,
+    solver='max',
+    debug=False,
+):
     """Return a list of (token_idx, reward) for each sentence in the sequence."""
+
     resp_text = tokenizer.decode(generated_tokens_ids, skip_special_tokens=True)
     doc = rind_calc.nlp(resp_text)
     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
@@ -114,28 +126,45 @@ def compute_sentence_end_rewards(rind_calc, model, tokenizer, generated_tokens_i
     encoding = tokenizer(resp_text, return_offsets_mapping=True, add_special_tokens=False)
     offsets = encoding["offset_mapping"]
     rewards = []
-    token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
 
+    # Step 1: compute attention on the generated tokens only
+    token_tensor = torch.tensor(generated_tokens_ids, dtype=torch.long, device=model.device)
     with torch.no_grad():
         with torch.autocast(model.device.type, dtype=torch.bfloat16):
-            out = model(
+            attn_out = model(
                 input_ids=token_tensor.unsqueeze(0),
                 attention_mask=torch.ones_like(token_tensor).unsqueeze(0),
                 use_cache=False,
                 output_attentions=True,
             )
 
-    logits = out.logits[0].float()
-    # compute token entropies without materializing log-probs on CPU
-    logsumexp = torch.logsumexp(logits, dim=-1, keepdim=True)
-    probs = torch.exp(logits - logsumexp)
-    entropies_full = (logsumexp.squeeze(-1) - (probs * logits).sum(dim=-1)).cpu()
-
-    attn_full = out.attentions[-1][0].float()
+    attn_full = attn_out.attentions[-1][0].float()
     attn_full = attn_full / attn_full.sum(dim=-1, keepdim=True).clamp_min(1e-12)
     attn_full = attn_full.cpu()
 
-    del out, logits, logsumexp, probs
+    del attn_out
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    # Step 2: teacher-forced forward on full context to compute token entropies
+    full_ids = torch.tensor(prompt_tokens_ids + generated_tokens_ids, device=model.device, dtype=torch.long)[None, :]
+    attn_mask = torch.ones_like(full_ids, device=model.device)
+    resp_len = len(generated_tokens_ids)
+
+    with torch.no_grad():
+        with torch.autocast(model.device.type, dtype=torch.bfloat16):
+            out = model(
+                input_ids=full_ids,
+                attention_mask=attn_mask,
+                use_cache=False,
+                output_attentions=False,
+                num_logits_to_keep=resp_len,
+            )
+
+    step_logits = out.logits[0].float()
+    entropies_full = entropy_from_logits(step_logits).cpu()
+
+    del out, step_logits
     torch.cuda.empty_cache()
     gc.collect()
 

@@ -473,13 +473,16 @@ class ActorRolloutRefWorker(Worker):
 
         # compute sentence-level rewards on the fly
         responses = output.batch['responses'].cpu()
+        prompts_ids = output.batch['prompts'].cpu()
         sentence_rewards = np.empty(responses.size(0), dtype=object)
         for b in range(responses.size(0)):
             token_ids = responses[b]
+            prompt_ids = prompts_ids[b]
             rewards = compute_sentence_end_rewards(
                 self.rind_calculator,
                 self.actor_module_fsdp,
                 self.tokenizer,
+                prompt_ids.tolist(),
                 token_ids.tolist(),
                 theta=1.2,
             )
