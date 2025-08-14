@@ -24,13 +24,15 @@ class RewardManager():
     """The reward manager.
     """
 
-    def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0.) -> None:
+    def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0., actor_module_for_reward=None, debug_rind=False) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine
         self.format_score = format_score
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.actor_module_for_reward = actor_module_for_reward
+        self.debug_rind = debug_rind
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
