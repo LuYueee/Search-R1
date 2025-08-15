@@ -201,9 +201,9 @@ class LLMGenerationManager:
         # Generate with padded batch
         padded_output = self.actor_rollout_wg.generate_sequences(padded_active_batch)
 
-        # Remove padding from output
+        # Remove padding from output tensors
         trimmed_batch = {k: v[:-padding_size] for k, v in padded_output.batch.items()}
-        
+
         # Handle meta_info if present
         if hasattr(padded_output, 'meta_info') and padded_output.meta_info:
             trimmed_meta = {}
@@ -213,7 +213,14 @@ class LLMGenerationManager:
                 else:
                     trimmed_meta[k] = v
             padded_output.meta_info = trimmed_meta
-            
+
+        # Handle non_tensor_batch if present
+        if hasattr(padded_output, 'non_tensor_batch') and padded_output.non_tensor_batch:
+            trimmed_non_tensor = {}
+            for k, v in padded_output.non_tensor_batch.items():
+                trimmed_non_tensor[k] = v[:-padding_size]
+            padded_output.non_tensor_batch = trimmed_non_tensor
+
         padded_output.batch = trimmed_batch
         return padded_output
 
@@ -222,13 +229,19 @@ class LLMGenerationManager:
         
         original_left_side = {'input_ids': initial_input_ids[:, -self.config.max_start_length:]}
         original_right_side = {'responses': initial_input_ids[:, []], 'responses_with_info_mask': initial_input_ids[:, []]}
-        
-        active_mask = torch.ones(gen_batch.batch['input_ids'].shape[0], dtype=torch.bool)
-        turns_stats = torch.ones(gen_batch.batch['input_ids'].shape[0], dtype=torch.int)
-        valid_action_stats = torch.zeros(gen_batch.batch['input_ids'].shape[0], dtype=torch.int)
-        valid_search_stats = torch.zeros(gen_batch.batch['input_ids'].shape[0], dtype=torch.int)
+
+        batch_size = gen_batch.batch['input_ids'].shape[0]
+        active_mask = torch.ones(batch_size, dtype=torch.bool)
+        turns_stats = torch.ones(batch_size, dtype=torch.int)
+        valid_action_stats = torch.zeros(batch_size, dtype=torch.int)
+        valid_search_stats = torch.zeros(batch_size, dtype=torch.int)
         active_num_list = [active_mask.sum().item()]
         rollings = gen_batch
+
+        # collect sentence-level rewards for each sample
+        sentence_rewards = [[] for _ in range(batch_size)]
+        # track cumulative response lengths for offsetting rewards across turns
+        cum_response_lens = [0] * batch_size
 
         # Main generation loop
         for step in range(self.config.max_turns):
@@ -245,9 +258,25 @@ class LLMGenerationManager:
             })            
             gen_output = self._generate_with_gpu_padding(rollings_active)
 
-            meta_info = gen_output.meta_info            
+            sr = gen_output.non_tensor_batch.get('sentence_rewards', None)
+
+            meta_info = gen_output.meta_info
             responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
             responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+
+            # compute length of newly generated responses for each sample
+            added_lengths = self.tensor_fn.create_attention_mask(responses_ids).sum(dim=1).tolist()
+
+            # map sentence rewards back to original batch positions with offset
+            if sr is not None:
+                active_indices = torch.where(active_mask)[0].tolist()
+                for idx, r in zip(active_indices, sr):
+                    offset = cum_response_lens[idx]
+                    sentence_rewards[idx].extend([(pos + offset, val) for pos, val in r])
+
+            # update cumulative response lengths
+            for idx in torch.where(active_mask)[0].tolist():
+                cum_response_lens[idx] += added_lengths[idx]
 
             # Execute in environment and process observations
             next_obs, dones, valid_action, is_search = self.execute_predictions(
@@ -288,9 +317,22 @@ class LLMGenerationManager:
             })            
             gen_output = self._generate_with_gpu_padding(rollings_active)
 
-            meta_info = gen_output.meta_info            
+            sr = gen_output.non_tensor_batch.get('sentence_rewards', None)
+
+            meta_info = gen_output.meta_info
             responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
             responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+
+            added_lengths = self.tensor_fn.create_attention_mask(responses_ids).sum(dim=1).tolist()
+
+            if sr is not None:
+                active_indices = torch.where(active_mask)[0].tolist()
+                for idx, r in zip(active_indices, sr):
+                    offset = cum_response_lens[idx]
+                    sentence_rewards[idx].extend([(pos + offset, val) for pos, val in r])
+
+            for idx in torch.where(active_mask)[0].tolist():
+                cum_response_lens[idx] += added_lengths[idx]
 
             # # Execute in environment and process observations
             _, dones, valid_action, is_search = self.execute_predictions(
@@ -315,22 +357,25 @@ class LLMGenerationManager:
         meta_info['valid_search_stats'] = valid_search_stats.tolist()
         
         print("ACTIVE_TRAJ_NUM:", active_num_list)
-        
-        return self._compose_final_output(original_left_side, original_right_side, meta_info)
+
+        non_tensor_batch = {'sentence_rewards': sentence_rewards}
+
+        return self._compose_final_output(original_left_side, original_right_side, meta_info, non_tensor_batch)
 
     def _compose_final_output(self, left_side: Dict,
                             right_side: Dict,
-                            meta_info: Dict) -> Tuple[Dict, Dict]:
+                            meta_info: Dict,
+                            non_tensor_batch: Dict = None) -> Tuple[Dict, Dict]:
         """Compose final generation output."""
         final_output = right_side.copy()
         final_output['prompts'] = left_side['input_ids']
-        
+
         # Combine input IDs
         final_output['input_ids'] = torch.cat([
             left_side['input_ids'],
             right_side['responses']
         ], dim=1)
-        
+
         # Create attention mask and position ids
         final_output['attention_mask'] = torch.cat([
             self.tensor_fn.create_attention_mask(left_side['input_ids']),
@@ -340,15 +385,12 @@ class LLMGenerationManager:
             self.tensor_fn.create_attention_mask(left_side['input_ids']),
             self.tensor_fn.create_attention_mask(final_output['responses_with_info_mask'])
         ], dim=1)
-        
+
         final_output['position_ids'] = self.tensor_fn.create_position_ids(
             final_output['attention_mask']
         )
-        
-        final_output = DataProto.from_dict(final_output)
-        final_output.meta_info.update(meta_info)
-        
-        return final_output
+
+        return DataProto.from_dict(final_output, non_tensors=non_tensor_batch, meta_info=meta_info)
 
     def execute_predictions(self, predictions: List[str], pad_token: str, active_mask=None, do_search=True) -> List[str]:
         """
