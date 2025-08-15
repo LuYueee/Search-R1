@@ -203,7 +203,7 @@ class LLMGenerationManager:
 
         # Remove padding from output
         trimmed_batch = {k: v[:-padding_size] for k, v in padded_output.batch.items()}
-        
+
         # Handle meta_info if present
         if hasattr(padded_output, 'meta_info') and padded_output.meta_info:
             trimmed_meta = {}
@@ -213,7 +213,17 @@ class LLMGenerationManager:
                 else:
                     trimmed_meta[k] = v
             padded_output.meta_info = trimmed_meta
-            
+
+        # Also trim non_tensor_batch (e.g., sentence_rewards) if present
+        if hasattr(padded_output, 'non_tensor_batch') and isinstance(padded_output.non_tensor_batch, dict):
+            trimmed_nt = {}
+            for k, v in padded_output.non_tensor_batch.items():
+                if isinstance(v, list):
+                    trimmed_nt[k] = v[:-padding_size]
+                else:
+                    trimmed_nt[k] = v
+            padded_output.non_tensor_batch = trimmed_nt
+
         padded_output.batch = trimmed_batch
         return padded_output
 
@@ -229,6 +239,7 @@ class LLMGenerationManager:
         valid_search_stats = torch.zeros(gen_batch.batch['input_ids'].shape[0], dtype=torch.int)
         active_num_list = [active_mask.sum().item()]
         rollings = gen_batch
+        final_sentence_rewards = None
 
         # Main generation loop
         for step in range(self.config.max_turns):
@@ -245,7 +256,7 @@ class LLMGenerationManager:
             })            
             gen_output = self._generate_with_gpu_padding(rollings_active)
 
-            meta_info = gen_output.meta_info            
+            meta_info = gen_output.meta_info
             responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
             responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
 
@@ -288,9 +299,22 @@ class LLMGenerationManager:
             })            
             gen_output = self._generate_with_gpu_padding(rollings_active)
 
-            meta_info = gen_output.meta_info            
+            meta_info = gen_output.meta_info
             responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
             responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+
+            # Collect sentence_rewards and expand to full batch
+            sr_active = None
+            if hasattr(gen_output, 'non_tensor_batch') and isinstance(gen_output.non_tensor_batch, dict):
+                sr_active = gen_output.non_tensor_batch.get('sentence_rewards', None)
+            if sr_active is not None:
+                sr_full = [ [] for _ in range(active_mask.shape[0]) ]
+                idx = 0
+                for b, active in enumerate(active_mask.tolist()):
+                    if active:
+                        sr_full[b] = sr_active[idx]
+                        idx += 1
+                final_sentence_rewards = sr_full
 
             # # Execute in environment and process observations
             _, dones, valid_action, is_search = self.execute_predictions(
@@ -315,22 +339,27 @@ class LLMGenerationManager:
         meta_info['valid_search_stats'] = valid_search_stats.tolist()
         
         print("ACTIVE_TRAJ_NUM:", active_num_list)
-        
-        return self._compose_final_output(original_left_side, original_right_side, meta_info)
+
+        non_tensor_batch = {}
+        if final_sentence_rewards is not None:
+            non_tensor_batch['sentence_rewards'] = final_sentence_rewards
+
+        return self._compose_final_output(original_left_side, original_right_side, meta_info, non_tensor_batch=non_tensor_batch)
 
     def _compose_final_output(self, left_side: Dict,
                             right_side: Dict,
-                            meta_info: Dict) -> Tuple[Dict, Dict]:
+                            meta_info: Dict,
+                            non_tensor_batch: Dict = None) -> Tuple[Dict, Dict]:
         """Compose final generation output."""
         final_output = right_side.copy()
         final_output['prompts'] = left_side['input_ids']
-        
+
         # Combine input IDs
         final_output['input_ids'] = torch.cat([
             left_side['input_ids'],
             right_side['responses']
         ], dim=1)
-        
+
         # Create attention mask and position ids
         final_output['attention_mask'] = torch.cat([
             self.tensor_fn.create_attention_mask(left_side['input_ids']),
@@ -340,14 +369,17 @@ class LLMGenerationManager:
             self.tensor_fn.create_attention_mask(left_side['input_ids']),
             self.tensor_fn.create_attention_mask(final_output['responses_with_info_mask'])
         ], dim=1)
-        
+
         final_output['position_ids'] = self.tensor_fn.create_position_ids(
             final_output['attention_mask']
         )
-        
+
         final_output = DataProto.from_dict(final_output)
         final_output.meta_info.update(meta_info)
-        
+        if non_tensor_batch is None:
+            non_tensor_batch = {}
+        final_output.non_tensor_batch = non_tensor_batch
+
         return final_output
 
     def execute_predictions(self, predictions: List[str], pad_token: str, active_mask=None, do_search=True) -> List[str]:
