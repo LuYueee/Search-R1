@@ -257,8 +257,16 @@ class LLMGenerationManager:
             # gen_output = self.actor_rollout_wg.generate_sequences(rollings)
             rollings_active = DataProto.from_dict({
                 k: v[active_mask] for k, v in rollings.batch.items()
-            })            
+            })
             gen_output = self._generate_with_gpu_padding(rollings_active)
+
+            meta_info = gen_output.meta_info
+            responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
+            responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+
+            cur_lens = self.tensor_fn.create_attention_mask(
+                original_right_side['responses']).sum(dim=1).tolist()
+            added_lens = self.tensor_fn.create_attention_mask(responses_ids).sum(dim=1).tolist()
 
             # map sentence rewards back to original batch positions
             sr = gen_output.non_tensor_batch.get('sentence_rewards', None)
@@ -266,28 +274,25 @@ class LLMGenerationManager:
                 active_indices = torch.where(active_mask)[0].tolist()
                 if len(active_indices) != len(sr):
                     print(f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}")
-                cur_lens = self.tensor_fn.create_attention_mask(
-                    original_right_side['responses']).sum(dim=1).tolist()
                 pair_iter = zip(active_indices[:len(sr)], sr[:len(active_indices)])
                 for idx, r in pair_iter:
                     if not isinstance(r, (list, tuple)):
                         print(f"[WARN] skip invalid sr container type: {type(r)}")
                         r = []
-                    offset_r = []
+                    kept = []
                     for it in r:
                         if not (isinstance(it, (list, tuple)) and len(it) == 2):
                             print(f"[WARN] skip invalid sr item: {it}")
                             continue
                         pos, val = it
-                        if pos >= 0 and isinstance(val, (int, float)) and math.isfinite(float(val)):
-                            offset_r.append((pos + cur_lens[idx], float(val)))
-                        else:
-                            print(f"[WARN] skip invalid reward: pos={pos}, val={val}")
-                    sentence_rewards[idx].extend(offset_r)
-
-            meta_info = gen_output.meta_info
-            responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
-            responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+                        try:
+                            p = int(pos)
+                            v = float(val)
+                        except Exception:
+                            continue
+                        if 0 <= p < int(added_lens[idx]) and math.isfinite(v):
+                            kept.append((p + cur_lens[idx], v))
+                    sentence_rewards[idx].extend(kept)
 
             # Execute in environment and process observations
             next_obs, dones, valid_action, is_search = self.execute_predictions(
@@ -325,8 +330,16 @@ class LLMGenerationManager:
             # gen_output = self.actor_rollout_wg.generate_sequences(rollings)
             rollings_active = DataProto.from_dict({
                 k: v[active_mask] for k, v in rollings.batch.items()
-            })            
+            })
             gen_output = self._generate_with_gpu_padding(rollings_active)
+
+            meta_info = gen_output.meta_info
+            responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
+            responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+
+            cur_lens = self.tensor_fn.create_attention_mask(
+                original_right_side['responses']).sum(dim=1).tolist()
+            added_lens = self.tensor_fn.create_attention_mask(responses_ids).sum(dim=1).tolist()
 
             # collect rewards for remaining active samples
             sr = gen_output.non_tensor_batch.get('sentence_rewards', None)
@@ -334,28 +347,25 @@ class LLMGenerationManager:
                 active_indices = torch.where(active_mask)[0].tolist()
                 if len(active_indices) != len(sr):
                     print(f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}")
-                cur_lens = self.tensor_fn.create_attention_mask(
-                    original_right_side['responses']).sum(dim=1).tolist()
                 pair_iter = zip(active_indices[:len(sr)], sr[:len(active_indices)])
                 for idx, r in pair_iter:
                     if not isinstance(r, (list, tuple)):
                         print(f"[WARN] skip invalid sr container type: {type(r)}")
                         r = []
-                    offset_r = []
+                    kept = []
                     for it in r:
                         if not (isinstance(it, (list, tuple)) and len(it) == 2):
                             print(f"[WARN] skip invalid sr item: {it}")
                             continue
                         pos, val = it
-                        if pos >= 0 and isinstance(val, (int, float)) and math.isfinite(float(val)):
-                            offset_r.append((pos + cur_lens[idx], float(val)))
-                        else:
-                            print(f"[WARN] skip invalid reward: pos={pos}, val={val}")
-                    sentence_rewards[idx].extend(offset_r)
-
-            meta_info = gen_output.meta_info
-            responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
-            responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+                        try:
+                            p = int(pos)
+                            v = float(val)
+                        except Exception:
+                            continue
+                        if 0 <= p < int(added_lens[idx]) and math.isfinite(v):
+                            kept.append((p + cur_lens[idx], v))
+                    sentence_rewards[idx].extend(kept)
 
             # # Execute in environment and process observations
             _, dones, valid_action, is_search = self.execute_predictions(
@@ -381,10 +391,12 @@ class LLMGenerationManager:
         
         print("ACTIVE_TRAJ_NUM:", active_num_list)
 
+        final_valid_lens = self.tensor_fn.create_attention_mask(
+            original_right_side['responses']).sum(dim=1).tolist()
         for i in range(batch_size):
             agg = {}
             for pos, val in sentence_rewards[i]:
-                if pos >= 0:
+                if 0 <= pos < final_valid_lens[i]:
                     agg[pos] = agg.get(pos, 0.0) + float(val)
             sentence_rewards[i] = sorted(agg.items())
 
