@@ -303,7 +303,10 @@ class LLMGenerationManager:
                             print(
                                 f"[WARN] skip invalid reward: pos={pos}, val={val}, added={added}"
                             )
-                    sentence_rewards[idx].extend(offset_r)
+                    # Only keep rewards from the first successful turn to
+                    # ensure alignment with the standalone rind_reward.py
+                    if offset_r and not sentence_rewards[idx]:
+                        sentence_rewards[idx] = offset_r
 
             responses_ids, responses_str = self.tensor_fn._example_level_pad(
                 responses_ids_active, responses_str_active, active_mask
@@ -390,7 +393,8 @@ class LLMGenerationManager:
                             print(
                                 f"[WARN] skip invalid reward: pos={pos}, val={val}, added={added}"
                             )
-                    sentence_rewards[idx].extend(offset_r)
+                    if offset_r and not sentence_rewards[idx]:
+                        sentence_rewards[idx] = offset_r
 
             responses_ids, responses_str = self.tensor_fn._example_level_pad(
                 responses_ids_active, responses_str_active, active_mask
