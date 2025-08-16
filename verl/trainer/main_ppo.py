@@ -48,19 +48,40 @@ class RewardManager():
 
             prompt_ids = data_item.batch['prompts']
             prompt_length = prompt_ids.shape[-1]
-            valid_prompt_length = data_item.batch['attention_mask'][:prompt_length].sum()
+            info_mask = data_item.batch.get('info_mask')
+
+            if info_mask is not None:
+                valid_prompt_length = int(info_mask[:prompt_length].sum().item())
+            else:
+                valid_prompt_length = int(data_item.batch['attention_mask'][:prompt_length].sum().item())
             valid_prompt_ids = prompt_ids[-valid_prompt_length:]
 
             response_ids = data_item.batch['responses']
-            valid_response_length = data_item.batch['attention_mask'][prompt_length:].sum()
+            if info_mask is not None:
+                info_mask_resp = info_mask[prompt_length:]
+                response_positions = torch.nonzero(info_mask_resp, as_tuple=False).squeeze(-1)
+                valid_response_length = response_positions.shape[0]
+            else:
+                attention_mask_resp = data_item.batch['attention_mask'][prompt_length:]
+                valid_response_length = int(attention_mask_resp.sum().item())
+                response_positions = torch.arange(valid_response_length, device=response_ids.device)
 
-            sequences = torch.cat((valid_prompt_ids, response_ids[:valid_response_length]))
+            sequences = torch.cat((valid_prompt_ids, response_ids[response_positions]))
             sequences_str = self.tokenizer.decode(sequences)
 
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
             for pos, val in rewards:
                 if pos < valid_response_length:
-                    reward_tensor[i, pos] = val
+                    reward_pos = int(response_positions[pos].item())
+                    reward_tensor[i, reward_pos] = val
+                    end_token_id = response_ids[reward_pos].item()
+                    end_token_str = self.tokenizer.decode([end_token_id])
+                    start_slice = max(0, pos - 20)
+                    snippet_ids = response_ids[response_positions[start_slice:pos + 1]].tolist()
+                    snippet_str = self.tokenizer.decode(snippet_ids)
+                    print(
+                        f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}"
+                    )
 
             data_source = data_item.non_tensor_batch.get('data_source', 'unknown')
             if data_source not in already_print_data_sources:
