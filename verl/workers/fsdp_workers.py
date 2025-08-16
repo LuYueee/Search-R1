@@ -474,10 +474,15 @@ class ActorRolloutRefWorker(Worker):
         # compute sentence-level rewards on the fly
         responses = output.batch['responses'].cpu()
         prompts_ids = output.batch['prompts'].cpu()
+        attn_mask = output.batch['attention_mask'].cpu()
+        prompt_len = prompts_ids.shape[1]
         sentence_rewards = np.empty(responses.size(0), dtype=object)
         for b in range(responses.size(0)):
             token_ids = responses[b]
             prompt_ids = prompts_ids[b]
+            resp_mask = attn_mask[b, prompt_len:]
+            valid_len = int(resp_mask.sum().item())
+            token_ids = token_ids[:valid_len]
             rewards = compute_sentence_end_rewards(
                 self.rind_calculator,
                 self.actor_module_fsdp,
