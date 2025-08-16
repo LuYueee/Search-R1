@@ -1,16 +1,7 @@
 # Copyright 2024 Bytedance Ltd. and/or its affiliates
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# ...
 """
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
@@ -41,33 +32,71 @@ class RewardManager():
 
         reward_tensor = torch.zeros_like(data.batch['responses'], dtype=torch.float32)
 
-        already_print_data_sources = {}
-
+        # ---- 优先读取 batch 级 sentence_rewards（与 generation v49 的传递方式对齐）----
+        batch_sentence_rewards = None
+        if hasattr(data, "non_tensor_batch") and isinstance(data.non_tensor_batch, dict):
+            batch_sentence_rewards = data.non_tensor_batch.get('sentence_rewards', None)
+        # -------------------------------------------------------------------------
+            
         for i in range(len(data)):
             data_item = data[i]
 
+            # 取 prompt/response 的有效长度（显式转为 Python int）
             prompt_ids = data_item.batch['prompts']
-            prompt_length = prompt_ids.shape[-1]
-            valid_prompt_length = data_item.batch['attention_mask'][:prompt_length].sum()
+            prompt_length = int(prompt_ids.shape[-1])
+            valid_prompt_length = int(data_item.batch['attention_mask'][:prompt_length].sum().item())
             valid_prompt_ids = prompt_ids[-valid_prompt_length:]
 
             response_ids = data_item.batch['responses']
-            valid_response_length = data_item.batch['attention_mask'][prompt_length:].sum()
+            valid_response_length = int(data_item.batch['attention_mask'][prompt_length:].sum().item())
+            valid_response_ids = response_ids[:valid_response_length]
 
-            sequences = torch.cat((valid_prompt_ids, response_ids[:valid_response_length]))
+            # 解码：完整序列（含 prompt）和仅响应文本
+            sequences = torch.cat((valid_prompt_ids, valid_response_ids))
             sequences_str = self.tokenizer.decode(sequences)
+            full_resp_text = self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
 
-            rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
-            for pos, val in rewards:
-                if pos < valid_response_length:
+            # —— 拿句末奖励（先 batch 级，再回退 item 级）——
+            if batch_sentence_rewards is not None:
+                rewards = batch_sentence_rewards[i]
+            else:
+                rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            # -----------------------------------------
+            #print("[DEBUG]reward:",rewards)
+            # —— 打印 & 写入：每个句末 (pos, val) —— 
+            for pos, val in list(rewards):
+                pos = int(pos)
+                val = float(val)
+
+                # 片段句子：从句末回溯最多 32 个 response token
+                frag_start = max(0, pos - 32)
+                frag_end = min(valid_response_length, pos + 1)  # 保护上界
+                frag_tokens = response_ids[frag_start:frag_end]
+                frag_text = self.tokenizer.decode(frag_tokens, skip_special_tokens=True)
+
+                # 句末 token 的 piece（越界时给提示）
+                if 0 <= pos < valid_response_length:
+                    end_tok_id = int(response_ids[pos].item())
+                    end_piece_list = self.tokenizer.convert_ids_to_tokens([end_tok_id])
+                    end_piece = end_piece_list[0] if end_piece_list else "<UNK>"
+                else:
+                    end_piece = "<OUT_OF_RANGE>"
+
+                # —— 无条件打印 —— 
+                print(
+                    f" 响应完整内容：{full_resp_text}；"
+                    f"句子（可以是片段句子）：{frag_text}；"
+                    f"句末token：{end_piece}；   "
+                    f"句末token位置：{pos}；"
+                    f"句末奖励：{val}"
+                )
+
+                # 仅在合法索引时写入 step-level 奖励（对齐 response 段）
+                if 0 <= pos < valid_response_length:
                     reward_tensor[i, pos] = val
 
-            data_source = data_item.non_tensor_batch.get('data_source', 'unknown')
-            if data_source not in already_print_data_sources:
-                already_print_data_sources[data_source] = 0
-            if already_print_data_sources[data_source] < self.num_examine:
-                already_print_data_sources[data_source] += 1
-                print(sequences_str)
+            # 保留原有的每样本完整序列打印（含 prompt，可按需注释）
+            print(sequences_str)
 
         return reward_tensor
 
