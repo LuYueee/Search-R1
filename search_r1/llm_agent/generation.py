@@ -278,7 +278,7 @@ class LLMGenerationManager:
                         f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}"
                     )
                 cur_lens = self.tensor_fn.create_attention_mask(
-                    original_right_side['responses_with_info_mask']
+                    original_right_side['responses']
                 ).sum(dim=1).tolist()
                 pair_iter = zip(
                     active_indices[: len(sr)], sr[: len(active_indices)], added_lens[: len(sr)]
@@ -365,7 +365,7 @@ class LLMGenerationManager:
                         f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}"
                     )
                 cur_lens = self.tensor_fn.create_attention_mask(
-                    original_right_side['responses_with_info_mask']
+                    original_right_side['responses']
                 ).sum(dim=1).tolist()
                 pair_iter = zip(
                     active_indices[: len(sr)], sr[: len(active_indices)], added_lens[: len(sr)]
@@ -419,15 +419,24 @@ class LLMGenerationManager:
         meta_info['valid_search_stats'] = valid_search_stats.tolist()
         
         print("ACTIVE_TRAJ_NUM:", active_num_list)
-        final_lens = self.tensor_fn.create_attention_mask(
+
+        # build a map from absolute token index to the position of
+        # response tokens (excluding information blocks) so that the
+        # reward indices match the expectation of RewardManager
+        resp_masks = self.tensor_fn.create_attention_mask(
             original_right_side['responses_with_info_mask']
-        ).sum(dim=1).tolist()
+        )
 
         for i in range(batch_size):
+            valid_positions = torch.nonzero(
+                resp_masks[i], as_tuple=False
+            ).squeeze(-1).tolist()
+            pos_map = {p: idx for idx, p in enumerate(valid_positions)}
+
             agg = {}
             for pos, val in sentence_rewards[i]:
-                if 0 <= pos < final_lens[i]:
-                    agg[pos] = agg.get(pos, 0.0) + float(val)
+                if pos in pos_map:
+                    agg[pos_map[pos]] = agg.get(pos_map[pos], 0.0) + float(val)
             sentence_rewards[i] = sorted(agg.items())
 
         prev_nt = getattr(gen_batch, 'non_tensor_batch', {}) or {}
