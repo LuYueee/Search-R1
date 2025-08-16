@@ -48,19 +48,28 @@ class RewardManager():
 
             prompt_ids = data_item.batch['prompts']
             prompt_length = prompt_ids.shape[-1]
-            valid_prompt_length = data_item.batch['attention_mask'][:prompt_length].sum()
+            attention_mask = data_item.batch['attention_mask']
+            valid_prompt_length = int(attention_mask[:prompt_length].sum())
             valid_prompt_ids = prompt_ids[-valid_prompt_length:]
 
             response_ids = data_item.batch['responses']
-            valid_response_length = data_item.batch['attention_mask'][prompt_length:].sum()
+            info_mask = data_item.batch.get('info_mask')
+            if info_mask is not None:
+                info_mask_resp = info_mask[prompt_length:]
+                response_positions = torch.nonzero(info_mask_resp, as_tuple=False).squeeze(-1)
+            else:
+                attn_resp = attention_mask[prompt_length:]
+                response_positions = torch.nonzero(attn_resp, as_tuple=False).squeeze(-1)
+            valid_response_length = response_positions.numel()
 
-            sequences = torch.cat((valid_prompt_ids, response_ids[:valid_response_length]))
+            sequences = torch.cat((valid_prompt_ids, response_ids[response_positions]))
             sequences_str = self.tokenizer.decode(sequences)
 
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
             for pos, val in rewards:
                 if pos < valid_response_length:
-                    reward_tensor[i, pos] = val
+                    actual_pos = int(response_positions[pos])
+                    reward_tensor[i, actual_pos] = val
 
             data_source = data_item.non_tensor_batch.get('data_source', 'unknown')
             if data_source not in already_print_data_sources:
