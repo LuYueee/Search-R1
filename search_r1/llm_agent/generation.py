@@ -267,7 +267,7 @@ class LLMGenerationManager:
                 if len(active_indices) != len(sr):
                     print(f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}")
                 cur_lens = self.tensor_fn.create_attention_mask(
-                    original_right_side['responses']).sum(dim=1).tolist()
+                    original_right_side['responses_with_info_mask']).sum(dim=1).tolist()
                 pair_iter = zip(active_indices[:len(sr)], sr[:len(active_indices)])
                 for idx, r in pair_iter:
                     if not isinstance(r, (list, tuple)):
@@ -335,7 +335,7 @@ class LLMGenerationManager:
                 if len(active_indices) != len(sr):
                     print(f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}")
                 cur_lens = self.tensor_fn.create_attention_mask(
-                    original_right_side['responses']).sum(dim=1).tolist()
+                    original_right_side['responses_with_info_mask']).sum(dim=1).tolist()
                 pair_iter = zip(active_indices[:len(sr)], sr[:len(active_indices)])
                 for idx, r in pair_iter:
                     if not isinstance(r, (list, tuple)):
