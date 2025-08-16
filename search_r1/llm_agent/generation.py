@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from .tensor_helper import TensorHelper, TensorConfig
 from verl import DataProto
 from verl.utils.tracking import Tracking
+from verl.utils.rind_reward import build_offsets_from_ids
 import shutil
 import requests
 
@@ -422,11 +423,24 @@ class LLMGenerationManager:
         final_lens = self.tensor_fn.create_attention_mask(
             original_right_side['responses_with_info_mask']
         ).sum(dim=1).tolist()
+        responses_final = original_right_side['responses']
 
         for i in range(batch_size):
+            valid_ids = responses_final[i][:final_lens[i]].tolist()
+            resp_text, offsets = build_offsets_from_ids(self.tokenizer, valid_ids)
+            skip_spans = []
+            for tag in ("search", "information", "answer"):
+                pattern = fr"<{tag}>.*?</{tag}>"
+                for m in re.finditer(pattern, resp_text, flags=re.DOTALL):
+                    skip_spans.append((m.start(), m.end()))
+
+            def in_skip(idx):
+                s, e = offsets[idx]
+                return any(s >= ss and e <= ee for ss, ee in skip_spans)
+
             agg = {}
             for pos, val in sentence_rewards[i]:
-                if 0 <= pos < final_lens[i]:
+                if 0 <= pos < final_lens[i] and not in_skip(pos):
                     agg[pos] = agg.get(pos, 0.0) + float(val)
             sentence_rewards[i] = sorted(agg.items())
 
