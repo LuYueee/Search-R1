@@ -17,7 +17,17 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 
 from verl import DataProto
 import torch
+from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+import re
+import numpy as np
+
+
+def _select_rm_score_fn(data_source):
+    if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
+        return qa_em_format.compute_score_em
+    else:
+        raise NotImplementedError
 
 
 class RewardManager():
@@ -83,7 +93,21 @@ class RewardManager():
                         f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}"
                     )
 
-            data_source = data_item.non_tensor_batch.get('data_source', 'unknown')
+            data_source = data_item.non_tensor_batch['data_source']
+            compute_score_fn = _select_rm_score_fn(data_source)
+            ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
+            score = compute_score_fn(
+                solution_str=sequences_str,
+                ground_truth=ground_truth,
+                structure_format_score=self.structure_format_score,
+                final_format_score=self.final_format_score,
+                retrieval_score=self.retrieval_score,
+                format_score=self.format_score,
+            )
+            if valid_response_length > 0:
+                last_pos = int(response_positions[valid_response_length - 1].item())
+                reward_tensor[i, last_pos] = reward_tensor[i, last_pos] + score
+
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0
             if already_print_data_sources[data_source] < self.num_examine:
