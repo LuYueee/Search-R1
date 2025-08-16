@@ -136,7 +136,18 @@ class LLMGenerationManager:
         
         concatenated = torch.cat(tensors, dim=1)
         concatenated_with_info = torch.cat(tensors_with_mask, dim=1)
-        mask = concatenated != pad_id if pad_to_left else concatenated == pad_id
+        # Use the masked version to determine padding positions so that
+        # any inserted information blocks (which are replaced with pad
+        # tokens in ``concatenated_with_info``) are treated as padding
+        # regardless of their original token ids. This prevents
+        # information tokens from being mistakenly counted as valid
+        # response tokens, which could otherwise lead to misaligned
+        # sentence-level rewards.
+        mask = (
+            concatenated_with_info != pad_id
+            if pad_to_left
+            else concatenated_with_info == pad_id
+        )
         sorted_indices = mask.to(torch.int64).argsort(dim=1, stable=True)
         padded_tensor = concatenated.gather(1, sorted_indices)
         padded_tensor_with_info = concatenated_with_info.gather(1, sorted_indices)
