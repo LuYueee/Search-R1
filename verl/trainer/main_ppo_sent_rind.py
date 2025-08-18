@@ -21,7 +21,7 @@ from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 import re
 import numpy as np
-import spacy
+
 
 def _select_rm_score_fn(data_source):
     if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
@@ -36,16 +36,12 @@ class RewardManager():
 
     def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0.) -> None:
         self.tokenizer = tokenizer
-        self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+        self.num_examine = num_examine
         self.format_score = format_score
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
-        
-        # —— 新增：加载 spaCy 英语模型，用于句子分割 ——#
-        self.nlp = spacy.load("en_core_web_sm")
-        # 在 __call__ 里会用 tokenizer.convert_ids_to_tokens 将 ids 转回 token 字符串
-        
+
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
 
@@ -55,106 +51,125 @@ class RewardManager():
 
         reward_tensor = torch.zeros_like(data.batch['responses'], dtype=torch.float32)
 
+        already_print_data_sources = {}
         all_scores = []
 
-        already_print_data_sources = {}
-
         for i in range(len(data)):
-            data_item = data[i]  # DataProtoItem
+            data_item = data[i]
 
             prompt_ids = data_item.batch['prompts']
-
             prompt_length = prompt_ids.shape[-1]
+            info_mask = data_item.batch.get('info_mask')
 
-            valid_prompt_length = data_item.batch['attention_mask'][:prompt_length].sum()
+            if info_mask is not None:
+                valid_prompt_length = int(info_mask[:prompt_length].sum().item())
+            else:
+                valid_prompt_length = int(data_item.batch['attention_mask'][:prompt_length].sum().item())
             valid_prompt_ids = prompt_ids[-valid_prompt_length:]
 
             response_ids = data_item.batch['responses']
-            valid_response_length = data_item.batch['attention_mask'][prompt_length:].sum()
-            valid_response_ids = response_ids[:valid_response_length]
+            if info_mask is not None:
+                info_mask_resp = info_mask[prompt_length:]
+                response_positions = torch.nonzero(info_mask_resp, as_tuple=False).squeeze(-1)
+                valid_response_length = response_positions.shape[0]
+            else:
+                attention_mask_resp = data_item.batch['attention_mask'][prompt_length:]
+                valid_response_length = int(attention_mask_resp.sum().item())
+                response_positions = torch.arange(valid_response_length, device=response_ids.device)
 
-            # decode
-            sequences = torch.cat((valid_prompt_ids, valid_response_ids))
+            sequences = torch.cat((valid_prompt_ids, response_ids[response_positions]))
             sequences_str = self.tokenizer.decode(sequences)
 
-            ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
+            rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            for pos, val in rewards:
+                if pos < valid_response_length:
+                    reward_pos = int(response_positions[pos].item())
+                    reward_tensor[i, reward_pos] = val
+                    #end_token_id = response_ids[reward_pos].item()
+                    #end_token_str = self.tokenizer.decode([end_token_id])
+                    #start_slice = max(0, pos - 20)
+                    #snippet_ids = response_ids[response_positions[start_slice:pos + 1]].tolist()
+                    #snippet_str = self.tokenizer.decode(snippet_ids)
+                    #print( f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}" )
 
-            # select rm_score
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
-
-            score = compute_score_fn(solution_str=sequences_str, ground_truth=ground_truth, 
-                                     structure_format_score=self.structure_format_score, 
-                                     final_format_score=self.final_format_score, 
-                                     retrieval_score=self.retrieval_score,
-                                     format_score=self.format_score)
-
-            #reward_tensor[i, valid_response_length - 1] = score
-            # —— 修改：spaCy 切句 + Token 对齐，实现句子级奖励分配 —— #
-            # 1) 解码并分割出纯 response 文本
-            resp_text = self.tokenizer.decode(
-                valid_response_ids, skip_special_tokens=True
+            ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
+            score = compute_score_fn(
+                solution_str=sequences_str,
+                ground_truth=ground_truth,
+                structure_format_score=self.structure_format_score,
+                final_format_score=self.final_format_score,
+                retrieval_score=self.retrieval_score,
+                format_score=self.format_score,
             )
-            # —— 调试打印：原始 response 文本
-            #print(f"[Debug] Sample {i} resp_text: {resp_text!r}")
-            
-            # 2) 用 spaCy 切句
-            doc = self.nlp(resp_text)
-            sents = [sent.text.strip() for sent in doc.sents if len(sent.text.strip())>0]
-            num_sents = max(1, len(sents))
-            per_sent = float(score) / num_sents
-            # —— 调试打印：检测到的句子
-            #print(f"[Debug] Sample {i} sentences ({len(sents)}): {sents}")
-            
-            # 3) Token 对齐：找到每句最后一个 token 的位置
-            tok_strs = self.tokenizer.convert_ids_to_tokens(valid_response_ids, skip_special_tokens=True)
-            ends = set()
-            tid = 0
-            for sent in sents:
-                pos = 0
-                tr = tid
-                # 按子词在句子中逐步匹配
-                while tr < len(tok_strs):
-                    fragment = tok_strs[tr].lstrip("Ġ")  # 如果模型用 Ġ 表示前导空格
-                    idx = sent[pos:].find(fragment)
-                    if idx == -1:
-                        break
-                    pos += idx + len(fragment)
-                    tr += 1
-                # [tid, tr) 属于当前句子，把最后一个 token 位置收集
-                if tr > tid:
-                    ends.add(tr - 1)
-                tid = tr
+            if valid_response_length > 0:
+                last_pos = int(response_positions[valid_response_length - 1].item())
+                reward_tensor[i, last_pos] = reward_tensor[i, last_pos] + score
+                all_scores.append(score)
 
-            # 4) 赋值：仅在句尾 token 上放 per_sent
-            for t in ends:
-                reward_tensor[i, t] = per_sent
-                # —— 调试打印：该位置的 reward 值
-                print(f"[Debug] Sample {i} reward_tensor[{i}, {t}] = {reward_tensor[i, t].item():.4f}")
-            # —— 句子级奖励分配结束 —— #
-            all_scores.append(score)
-            
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0
-
             if already_print_data_sources[data_source] < self.num_examine:
                 already_print_data_sources[data_source] += 1
                 print(sequences_str)
-        print(f"[DEBUG] Batch reward stats - mean: {np.mean(all_scores):.4f}, min: {np.min(all_scores):.4f}, max: {np.max(all_scores):.4f}")
-        # —— 新增：打印本 batch 的奖励统计 —— #
-        # 只统计非零奖励（即真正分配到句尾的那些 step）
-        nonzero = reward_tensor[reward_tensor != 0.0]
-        if nonzero.numel() > 0:
-            r_max = nonzero.max().item()
-            r_min = nonzero.min().item()
-            r_mean = nonzero.mean().item()
-            print(f"[RewardManager] Batch reward stats -> max: {r_max:.4f}, min: {r_min:.4f}, mean: {r_mean:.4f}")
-        else:
-            print("[RewardManager] Batch reward stats -> all zeros")
-        # —— 打印结束 —— #
 
+        if all_scores:
+            print(
+                f"[DEBUG][EM+Format] Batch reward stats - mean: {np.mean(all_scores):.4f}, "
+                f"min: {np.min(all_scores):.4f}, max: {np.max(all_scores):.4f}"
+            )
+
+        # Compute step-level statistics across all valid response tokens
+        prompt_len = data.batch['prompts'].shape[1]
+        if 'info_mask' in data.batch:
+            resp_mask = data.batch['info_mask'][:, prompt_len:]
+        else:
+            resp_mask = data.batch['attention_mask'][:, prompt_len:]
+        resp_mask = resp_mask.to(reward_tensor.device)
+        valid_rewards = reward_tensor[resp_mask.bool()]
+
+        if valid_rewards.numel() > 0:
+            vr = valid_rewards.cpu().numpy()
+            step_mean = vr.mean()
+            step_std = vr.std()
+            step_min = vr.min()
+            step_max = vr.max()
+            pos_rate = (vr > 0).mean()
+            neg_rate = (vr < 0).mean()
+        else:
+            step_mean = step_std = step_min = step_max = pos_rate = neg_rate = 0.0
+
+        print(
+            f"[DEBUG][Step] step_reward/mean: {step_mean:.4f}, /std: {step_std:.4f}, /min: {step_min:.4f}, "
+            f"/max: {step_max:.4f}, /pos_rate: {pos_rate:.4f}, /neg_rate: {neg_rate:.4f}"
+        )
+
+        # Compute per-sample aggregated rewards within batch
+        sample_mask = resp_mask.bool()
+        sample_returns = (reward_tensor * sample_mask).sum(dim=1)
+        nonzero_steps = (reward_tensor * sample_mask != 0).sum(dim=1)
+        sample_lengths = sample_mask.sum(dim=1)
+
+        sr = sample_returns.cpu().numpy()
+        if sr.size > 0:
+            return_mean = sr.mean()
+            return_std = sr.std()
+            return_min = sr.min()
+            return_max = sr.max()
+            nz_steps_mean = nonzero_steps.float().mean().item()
+            len_mean = sample_lengths.float().mean().item()
+        else:
+            return_mean = return_std = return_min = return_max = 0.0
+            nz_steps_mean = len_mean = 0.0
+
+        print(
+            f"[DEBUG][Step] sample/return_mean: {return_mean:.4f}, /std: {return_std:.4f}, /min: {return_min:.4f}, "
+            f"/max: {return_max:.4f}, /nonzero_steps_mean: {nz_steps_mean:.4f}, /len_mean: {len_mean:.4f}"
+        )
 
         return reward_tensor
+
 
 import ray
 import hydra
