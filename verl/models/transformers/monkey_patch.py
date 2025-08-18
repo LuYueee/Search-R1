@@ -26,21 +26,9 @@ def apply_monkey_patch_to_llama():
 
 
 def apply_monkey_patch_to_qwen2():
-    from transformers.models.qwen2 import modeling_qwen2
+    from transformers.models.qwen2.modeling_qwen2 import Qwen2FlashAttention2
     from verl.models.transformers.qwen2 import qwen2_flash_attn_forward
-
-    patched = False
-    if hasattr(modeling_qwen2, "Qwen2FlashAttention2"):
-        modeling_qwen2.Qwen2FlashAttention2.forward = qwen2_flash_attn_forward
-        patched = True
-    if hasattr(modeling_qwen2, "Qwen2FlashAttention"):
-        modeling_qwen2.Qwen2FlashAttention.forward = qwen2_flash_attn_forward
-        patched = True
-    if hasattr(modeling_qwen2, "Qwen2Attention"):
-        modeling_qwen2.Qwen2Attention.forward = qwen2_flash_attn_forward
-        patched = True
-    if not patched:
-        raise AttributeError("No Qwen2 attention class found to monkey patch")
+    Qwen2FlashAttention2.forward = qwen2_flash_attn_forward
 
 
 _PATCH_NAME_TO_FUNC = {
