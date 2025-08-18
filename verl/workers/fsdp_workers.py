@@ -37,9 +37,6 @@ from verl.utils.import_utils import import_external_libs
 from verl.utils.model import compute_position_id_with_mask
 from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
-import numpy as np
-import gc
-from verl.utils.rind_reward import RINDCalculator, compute_sentence_end_rewards
 
 from codetiming import Timer
 
@@ -145,7 +142,7 @@ class ActorRolloutRefWorker(Worker):
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(actor_model_config.model_type)
 
-        if use_remove_padding:
+        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(actor_model_config, verbose=True)
 
@@ -353,8 +350,6 @@ class ActorRolloutRefWorker(Worker):
         if self._is_actor:
             self.flops_counter = FlopsCounter(self.actor_model_config)
 
-        self.rind_calculator = RINDCalculator(self.tokenizer)
-
         torch.cuda.empty_cache()
 
     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
@@ -470,23 +465,6 @@ class ActorRolloutRefWorker(Worker):
                 old_log_probs = self.actor.compute_log_prob(data=output)
                 output.batch['old_log_probs'] = old_log_probs
                 output = self.ulysses_sharding_manager.postprocess_data(output)
-
-        # compute sentence-level rewards on the fly
-        responses = output.batch['responses'].cpu()
-        sentence_rewards = np.empty(responses.size(0), dtype=object)
-        for b in range(responses.size(0)):
-            token_ids = responses[b]
-            rewards = compute_sentence_end_rewards(
-                self.rind_calculator,
-                self.actor_module_fsdp,
-                self.tokenizer,
-                token_ids.tolist(),
-                theta=1.2,
-            )
-            sentence_rewards[b] = rewards
-            gc.collect()
-
-        output.non_tensor_batch['sentence_rewards'] = sentence_rewards
 
         output = output.to('cpu')
 
@@ -630,7 +608,7 @@ class CriticWorker(Worker):
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(critic_model_config.model_type)
 
-        if use_remove_padding:
+        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(critic_model_config, verbose=True)
 
@@ -869,7 +847,7 @@ class RewardModelWorker(Worker):
             from verl.models.registry import check_model_support_rmpad
             check_model_support_rmpad(model_config.model_type)
 
-        if use_remove_padding:
+        if use_remove_padding and self.ulysses_sequence_parallel_size > 1:
             from verl.models.transformers.monkey_patch import apply_monkey_patch
             apply_monkey_patch(model_config, verbose=True)
 
