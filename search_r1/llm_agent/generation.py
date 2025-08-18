@@ -43,6 +43,10 @@ class LLMGenerationManager:
             max_start_length=config.max_start_length
         ))
 
+        # Cache search/answer token ids to avoid repeated encoding
+        self.search_ids = tokenizer.encode("</search>", add_special_tokens=False)
+        self.answer_ids = tokenizer.encode("</answer>", add_special_tokens=False)
+
     def _batch_tokenize(self, responses: List[str]) -> torch.Tensor:
         """Tokenize a batch of responses."""
         return self.tokenizer(
@@ -53,27 +57,41 @@ class LLMGenerationManager:
         )['input_ids']
 
     def _postprocess_responses(self, responses: torch.Tensor) -> torch.Tensor:
-        """Process responses to stop at search operation or answer operation."""
-        responses_str = self.tokenizer.batch_decode(
-            responses, 
-            skip_special_tokens=True
-        )
+        """Process responses to stop at search or answer tokens without
+        changing tokenization."""
+        pad_id = self.tokenizer.pad_token_id
+        search_ids = self.search_ids
+        answer_ids = self.answer_ids
 
-        responses_str = [resp.split('</search>')[0] + '</search>'
-                 if '</search>' in resp 
-                 else resp.split('</answer>')[0] + '</answer>'
-                 if '</answer>' in resp 
-                 else resp
-                 for resp in responses_str]
+        def find_end(seq, pattern):
+            if not pattern:
+                return -1
+            plen = len(pattern)
+            for i in range(len(seq) - plen + 1):
+                if seq[i:i + plen] == pattern:
+                    return i + plen
+            return -1
 
-        if self.config.no_think_rl:
-            raise ValueError('stop')
-            # if no_think_rl is enabled, only keep action in the str
-            actions, _ = self.env.postprocess_predictions(responses_str)
-            responses_str=[f"<answer>{envs[idx].ACTION_LOOKUP[action]}</answer>" for idx, action in enumerate(actions)]
-            print("RESPONSES:", responses_str)
-        responses = self._batch_tokenize(responses_str)
-        return responses, responses_str
+        processed, responses_str = [], []
+        for seq in responses.tolist():
+            if pad_id is not None:
+                while seq and seq[-1] == pad_id:
+                    seq.pop()
+            stop = len(seq)
+            for tag in (search_ids, answer_ids):
+                pos = find_end(seq, tag)
+                if pos != -1:
+                    stop = min(stop, pos)
+            seq = seq[:stop]
+            processed.append(torch.tensor(seq, dtype=responses.dtype))
+            responses_str.append(self.tokenizer.decode(seq, skip_special_tokens=True))
+
+        max_len = max((t.numel() for t in processed), default=0)
+        padded = torch.full((len(processed), max_len), pad_id, dtype=responses.dtype)
+        for i, t in enumerate(processed):
+            padded[i, : t.numel()] = t
+
+        return padded, responses_str
 
     def _process_next_obs(self, next_obs: List[str]) -> torch.Tensor:
         """Process next observations from environment."""
@@ -419,15 +437,24 @@ class LLMGenerationManager:
         meta_info['valid_search_stats'] = valid_search_stats.tolist()
         
         print("ACTIVE_TRAJ_NUM:", active_num_list)
-        final_lens = self.tensor_fn.create_attention_mask(
+
+        # build a map from absolute token index to the position of
+        # response tokens (excluding information blocks) so that the
+        # reward indices match the expectation of RewardManager
+        resp_masks = self.tensor_fn.create_attention_mask(
             original_right_side['responses_with_info_mask']
-        ).sum(dim=1).tolist()
+        )
 
         for i in range(batch_size):
+            valid_positions = torch.nonzero(
+                resp_masks[i], as_tuple=False
+            ).squeeze(-1).tolist()
+            pos_map = {p: idx for idx, p in enumerate(valid_positions)}
+
             agg = {}
             for pos, val in sentence_rewards[i]:
-                if 0 <= pos < final_lens[i]:
-                    agg[pos] = agg.get(pos, 0.0) + float(val)
+                if pos in pos_map:
+                    agg[pos_map[pos]] = agg.get(pos_map[pos], 0.0) + float(val)
             sentence_rewards[i] = sorted(agg.items())
 
         prev_nt = getattr(gen_batch, 'non_tensor_batch', {}) or {}

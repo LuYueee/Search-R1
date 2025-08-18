@@ -17,7 +17,17 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 
 from verl import DataProto
 import torch
+from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+import re
+import numpy as np
+
+
+def _select_rm_score_fn(data_source):
+    if data_source in ['nq', 'triviaqa', 'popqa', 'web_questions', 'hotpotqa', '2wikimultihopqa', 'musique', 'bamboogle', 'strategyqa']:
+        return qa_em_format.compute_score_em
+    else:
+        raise NotImplementedError
 
 
 class RewardManager():
@@ -42,6 +52,7 @@ class RewardManager():
         reward_tensor = torch.zeros_like(data.batch['responses'], dtype=torch.float32)
 
         already_print_data_sources = {}
+        all_scores = []
 
         for i in range(len(data)):
             data_item = data[i]
@@ -83,12 +94,81 @@ class RewardManager():
                         f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}"
                     )
 
-            data_source = data_item.non_tensor_batch.get('data_source', 'unknown')
+            data_source = data_item.non_tensor_batch['data_source']
+            compute_score_fn = _select_rm_score_fn(data_source)
+            ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
+            score = compute_score_fn(
+                solution_str=sequences_str,
+                ground_truth=ground_truth,
+                structure_format_score=self.structure_format_score,
+                final_format_score=self.final_format_score,
+                retrieval_score=self.retrieval_score,
+                format_score=self.format_score,
+            )
+            if valid_response_length > 0:
+                last_pos = int(response_positions[valid_response_length - 1].item())
+                reward_tensor[i, last_pos] = reward_tensor[i, last_pos] + score
+                all_scores.append(score)
+
             if data_source not in already_print_data_sources:
                 already_print_data_sources[data_source] = 0
             if already_print_data_sources[data_source] < self.num_examine:
                 already_print_data_sources[data_source] += 1
                 print(sequences_str)
+
+        if all_scores:
+            print(
+                f"[DEBUG] Batch reward stats - mean: {np.mean(all_scores):.4f}, "
+                f"min: {np.min(all_scores):.4f}, max: {np.max(all_scores):.4f}"
+            )
+
+        # Compute step-level statistics across all valid response tokens
+        prompt_len = data.batch['prompts'].shape[1]
+        if 'info_mask' in data.batch:
+            resp_mask = data.batch['info_mask'][:, prompt_len:]
+        else:
+            resp_mask = data.batch['attention_mask'][:, prompt_len:]
+        resp_mask = resp_mask.to(reward_tensor.device)
+        valid_rewards = reward_tensor[resp_mask.bool()]
+
+        if valid_rewards.numel() > 0:
+            vr = valid_rewards.cpu().numpy()
+            step_mean = vr.mean()
+            step_std = vr.std()
+            step_min = vr.min()
+            step_max = vr.max()
+            pos_rate = (vr > 0).mean()
+            neg_rate = (vr < 0).mean()
+        else:
+            step_mean = step_std = step_min = step_max = pos_rate = neg_rate = 0.0
+
+        print(
+            f"[DEBUG] step_reward/mean: {step_mean:.4f}, /std: {step_std:.4f}, /min: {step_min:.4f}, "
+            f"/max: {step_max:.4f}, /pos_rate: {pos_rate:.4f}, /neg_rate: {neg_rate:.4f}"
+        )
+
+        # Compute per-sample aggregated rewards within batch
+        sample_mask = resp_mask.bool()
+        sample_returns = (reward_tensor * sample_mask).sum(dim=1)
+        nonzero_steps = (reward_tensor * sample_mask != 0).sum(dim=1)
+        sample_lengths = sample_mask.sum(dim=1)
+
+        sr = sample_returns.cpu().numpy()
+        if sr.size > 0:
+            return_mean = sr.mean()
+            return_std = sr.std()
+            return_min = sr.min()
+            return_max = sr.max()
+            nz_steps_mean = nonzero_steps.float().mean().item()
+            len_mean = sample_lengths.float().mean().item()
+        else:
+            return_mean = return_std = return_min = return_max = 0.0
+            nz_steps_mean = len_mean = 0.0
+
+        print(
+            f"[DEBUG] sample/return_mean: {return_mean:.4f}, /std: {return_std:.4f}, /min: {return_min:.4f}, "
+            f"/max: {return_max:.4f}, /nonzero_steps_mean: {nz_steps_mean:.4f}, /len_mean: {len_mean:.4f}"
+        )
 
         return reward_tensor
 
