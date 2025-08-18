@@ -1,5 +1,6 @@
 import torch
 import re
+import math
 from collections import defaultdict
 import os
 from typing import List, Dict, Any, Tuple
@@ -42,6 +43,10 @@ class LLMGenerationManager:
             max_start_length=config.max_start_length
         ))
 
+        # Cache search/answer token ids to avoid repeated encoding
+        self.search_ids = tokenizer.encode("</search>", add_special_tokens=False)
+        self.answer_ids = tokenizer.encode("</answer>", add_special_tokens=False)
+
     def _batch_tokenize(self, responses: List[str]) -> torch.Tensor:
         """Tokenize a batch of responses."""
         return self.tokenizer(
@@ -52,27 +57,41 @@ class LLMGenerationManager:
         )['input_ids']
 
     def _postprocess_responses(self, responses: torch.Tensor) -> torch.Tensor:
-        """Process responses to stop at search operation or answer operation."""
-        responses_str = self.tokenizer.batch_decode(
-            responses, 
-            skip_special_tokens=True
-        )
+        """Process responses to stop at search or answer tokens without
+        changing tokenization."""
+        pad_id = self.tokenizer.pad_token_id
+        search_ids = self.search_ids
+        answer_ids = self.answer_ids
 
-        responses_str = [resp.split('</search>')[0] + '</search>'
-                 if '</search>' in resp 
-                 else resp.split('</answer>')[0] + '</answer>'
-                 if '</answer>' in resp 
-                 else resp
-                 for resp in responses_str]
+        def find_end(seq, pattern):
+            if not pattern:
+                return -1
+            plen = len(pattern)
+            for i in range(len(seq) - plen + 1):
+                if seq[i:i + plen] == pattern:
+                    return i + plen
+            return -1
 
-        if self.config.no_think_rl:
-            raise ValueError('stop')
-            # if no_think_rl is enabled, only keep action in the str
-            actions, _ = self.env.postprocess_predictions(responses_str)
-            responses_str=[f"<answer>{envs[idx].ACTION_LOOKUP[action]}</answer>" for idx, action in enumerate(actions)]
-            print("RESPONSES:", responses_str)
-        responses = self._batch_tokenize(responses_str)
-        return responses, responses_str
+        processed, responses_str = [], []
+        for seq in responses.tolist():
+            if pad_id is not None:
+                while seq and seq[-1] == pad_id:
+                    seq.pop()
+            stop = len(seq)
+            for tag in (search_ids, answer_ids):
+                pos = find_end(seq, tag)
+                if pos != -1:
+                    stop = min(stop, pos)
+            seq = seq[:stop]
+            processed.append(torch.tensor(seq, dtype=responses.dtype))
+            responses_str.append(self.tokenizer.decode(seq, skip_special_tokens=True))
+
+        max_len = max((t.numel() for t in processed), default=0)
+        padded = torch.full((len(processed), max_len), pad_id, dtype=responses.dtype)
+        for i, t in enumerate(processed):
+            padded[i, : t.numel()] = t
+
+        return padded, responses_str
 
     def _process_next_obs(self, next_obs: List[str]) -> torch.Tensor:
         """Process next observations from environment."""
@@ -201,9 +220,9 @@ class LLMGenerationManager:
         # Generate with padded batch
         padded_output = self.actor_rollout_wg.generate_sequences(padded_active_batch)
 
-        # Remove padding from output
+        # Remove padding from output tensors
         trimmed_batch = {k: v[:-padding_size] for k, v in padded_output.batch.items()}
-        
+
         # Handle meta_info if present
         if hasattr(padded_output, 'meta_info') and padded_output.meta_info:
             trimmed_meta = {}
@@ -213,7 +232,17 @@ class LLMGenerationManager:
                 else:
                     trimmed_meta[k] = v
             padded_output.meta_info = trimmed_meta
-            
+
+        # Handle non_tensor_batch if present
+        if hasattr(padded_output, 'non_tensor_batch') and padded_output.non_tensor_batch:
+            trimmed_non_tensor = {}
+            for k, v in padded_output.non_tensor_batch.items():
+                try:
+                    trimmed_non_tensor[k] = v[:-padding_size]
+                except Exception:
+                    trimmed_non_tensor[k] = v
+            padded_output.non_tensor_batch = trimmed_non_tensor
+
         padded_output.batch = trimmed_batch
         return padded_output
 
@@ -222,13 +251,17 @@ class LLMGenerationManager:
         
         original_left_side = {'input_ids': initial_input_ids[:, -self.config.max_start_length:]}
         original_right_side = {'responses': initial_input_ids[:, []], 'responses_with_info_mask': initial_input_ids[:, []]}
-        
-        active_mask = torch.ones(gen_batch.batch['input_ids'].shape[0], dtype=torch.bool)
-        turns_stats = torch.ones(gen_batch.batch['input_ids'].shape[0], dtype=torch.int)
-        valid_action_stats = torch.zeros(gen_batch.batch['input_ids'].shape[0], dtype=torch.int)
-        valid_search_stats = torch.zeros(gen_batch.batch['input_ids'].shape[0], dtype=torch.int)
+
+        batch_size = gen_batch.batch['input_ids'].shape[0]
+        active_mask = torch.ones(batch_size, dtype=torch.bool)
+        turns_stats = torch.ones(batch_size, dtype=torch.int)
+        valid_action_stats = torch.zeros(batch_size, dtype=torch.int)
+        valid_search_stats = torch.zeros(batch_size, dtype=torch.int)
         active_num_list = [active_mask.sum().item()]
         rollings = gen_batch
+
+        # collect sentence-level rewards for each sample
+        sentence_rewards = [[] for _ in range(batch_size)]
 
         # Main generation loop
         for step in range(self.config.max_turns):
@@ -245,9 +278,54 @@ class LLMGenerationManager:
             })            
             gen_output = self._generate_with_gpu_padding(rollings_active)
 
-            meta_info = gen_output.meta_info            
-            responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
-            responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+            meta_info = gen_output.meta_info
+
+            responses_ids_active, responses_str_active = self._postprocess_responses(
+                gen_output.batch['responses']
+            )
+            added_lens = self.tensor_fn.create_attention_mask(
+                responses_ids_active
+            ).sum(dim=1).tolist()
+
+            # map sentence rewards back to original batch positions after truncation
+            sr = gen_output.non_tensor_batch.get('sentence_rewards', None)
+            if sr is not None:
+                active_indices = torch.where(active_mask)[0].tolist()
+                if len(active_indices) != len(sr):
+                    print(
+                        f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}"
+                    )
+                cur_lens = self.tensor_fn.create_attention_mask(
+                    original_right_side['responses_with_info_mask']
+                ).sum(dim=1).tolist()
+                pair_iter = zip(
+                    active_indices[: len(sr)], sr[: len(active_indices)], added_lens[: len(sr)]
+                )
+                for idx, r, added in pair_iter:
+                    if not isinstance(r, (list, tuple)):
+                        print(f"[WARN] skip invalid sr container type: {type(r)}")
+                        r = []
+                    offset_r = []
+                    for it in r:
+                        if not (isinstance(it, (list, tuple)) and len(it) == 2):
+                            print(f"[WARN] skip invalid sr item: {it}")
+                            continue
+                        pos, val = it
+                        if (
+                            0 <= pos < added
+                            and isinstance(val, (int, float))
+                            and math.isfinite(float(val))
+                        ):
+                            offset_r.append((pos + cur_lens[idx], float(val)))
+                        else:
+                            print(
+                                f"[WARN] skip invalid reward: pos={pos}, val={val}, added={added}"
+                            )
+                    sentence_rewards[idx].extend(offset_r)
+
+            responses_ids, responses_str = self.tensor_fn._example_level_pad(
+                responses_ids_active, responses_str_active, active_mask
+            )
 
             # Execute in environment and process observations
             next_obs, dones, valid_action, is_search = self.execute_predictions(
@@ -288,9 +366,53 @@ class LLMGenerationManager:
             })            
             gen_output = self._generate_with_gpu_padding(rollings_active)
 
-            meta_info = gen_output.meta_info            
-            responses_ids, responses_str = self._postprocess_responses(gen_output.batch['responses'])
-            responses_ids, responses_str = self.tensor_fn._example_level_pad(responses_ids, responses_str, active_mask)
+            meta_info = gen_output.meta_info
+            responses_ids_active, responses_str_active = self._postprocess_responses(
+                gen_output.batch['responses']
+            )
+            added_lens = self.tensor_fn.create_attention_mask(
+                responses_ids_active
+            ).sum(dim=1).tolist()
+
+            # collect rewards for remaining active samples after truncation
+            sr = gen_output.non_tensor_batch.get('sentence_rewards', None)
+            if sr is not None:
+                active_indices = torch.where(active_mask)[0].tolist()
+                if len(active_indices) != len(sr):
+                    print(
+                        f"[WARN] sentence_rewards size mismatch: active={len(active_indices)} vs sr={len(sr)}"
+                    )
+                cur_lens = self.tensor_fn.create_attention_mask(
+                    original_right_side['responses_with_info_mask']
+                ).sum(dim=1).tolist()
+                pair_iter = zip(
+                    active_indices[: len(sr)], sr[: len(active_indices)], added_lens[: len(sr)]
+                )
+                for idx, r, added in pair_iter:
+                    if not isinstance(r, (list, tuple)):
+                        print(f"[WARN] skip invalid sr container type: {type(r)}")
+                        r = []
+                    offset_r = []
+                    for it in r:
+                        if not (isinstance(it, (list, tuple)) and len(it) == 2):
+                            print(f"[WARN] skip invalid sr item: {it}")
+                            continue
+                        pos, val = it
+                        if (
+                            0 <= pos < added
+                            and isinstance(val, (int, float))
+                            and math.isfinite(float(val))
+                        ):
+                            offset_r.append((pos + cur_lens[idx], float(val)))
+                        else:
+                            print(
+                                f"[WARN] skip invalid reward: pos={pos}, val={val}, added={added}"
+                            )
+                    sentence_rewards[idx].extend(offset_r)
+
+            responses_ids, responses_str = self.tensor_fn._example_level_pad(
+                responses_ids_active, responses_str_active, active_mask
+            )
 
             # # Execute in environment and process observations
             _, dones, valid_action, is_search = self.execute_predictions(
@@ -315,22 +437,46 @@ class LLMGenerationManager:
         meta_info['valid_search_stats'] = valid_search_stats.tolist()
         
         print("ACTIVE_TRAJ_NUM:", active_num_list)
-        
-        return self._compose_final_output(original_left_side, original_right_side, meta_info)
+
+        # build a map from absolute token index to the position of
+        # response tokens (excluding information blocks) so that the
+        # reward indices match the expectation of RewardManager
+        resp_masks = self.tensor_fn.create_attention_mask(
+            original_right_side['responses_with_info_mask']
+        )
+
+        for i in range(batch_size):
+            valid_positions = torch.nonzero(
+                resp_masks[i], as_tuple=False
+            ).squeeze(-1).tolist()
+            pos_map = {p: idx for idx, p in enumerate(valid_positions)}
+
+            agg = {}
+            for pos, val in sentence_rewards[i]:
+                if pos in pos_map:
+                    agg[pos_map[pos]] = agg.get(pos_map[pos], 0.0) + float(val)
+            sentence_rewards[i] = sorted(agg.items())
+
+        prev_nt = getattr(gen_batch, 'non_tensor_batch', {}) or {}
+        prev_nt = dict(prev_nt)
+        prev_nt['sentence_rewards'] = sentence_rewards
+
+        return self._compose_final_output(original_left_side, original_right_side, meta_info, prev_nt)
 
     def _compose_final_output(self, left_side: Dict,
                             right_side: Dict,
-                            meta_info: Dict) -> Tuple[Dict, Dict]:
+                            meta_info: Dict,
+                            non_tensor_batch: Dict = None) -> Tuple[Dict, Dict]:
         """Compose final generation output."""
         final_output = right_side.copy()
         final_output['prompts'] = left_side['input_ids']
-        
+
         # Combine input IDs
         final_output['input_ids'] = torch.cat([
             left_side['input_ids'],
             right_side['responses']
         ], dim=1)
-        
+
         # Create attention mask and position ids
         final_output['attention_mask'] = torch.cat([
             self.tensor_fn.create_attention_mask(left_side['input_ids']),
@@ -340,15 +486,12 @@ class LLMGenerationManager:
             self.tensor_fn.create_attention_mask(left_side['input_ids']),
             self.tensor_fn.create_attention_mask(final_output['responses_with_info_mask'])
         ], dim=1)
-        
+
         final_output['position_ids'] = self.tensor_fn.create_position_ids(
             final_output['attention_mask']
         )
-        
-        final_output = DataProto.from_dict(final_output)
-        final_output.meta_info.update(meta_info)
-        
-        return final_output
+
+        return DataProto.from_dict(final_output, non_tensors=non_tensor_batch, meta_info=meta_info)
 
     def execute_predictions(self, predictions: List[str], pad_token: str, active_mask=None, do_search=True) -> List[str]:
         """
