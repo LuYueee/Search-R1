@@ -104,6 +104,7 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo_sent_rind \
     reward_model.final_format_score=0.1 \
     reward_model.retrieval_score=0 \
     reward_model.lambda_episode=1 \
+    reward_model.rind_threshold=1.2 \
     max_turns=4 \
     retriever.url="http://127.0.0.1:8000/retrieve" \
     retriever.topk=3 \

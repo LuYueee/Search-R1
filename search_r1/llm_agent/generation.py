@@ -15,13 +15,14 @@ import requests
 class GenerationConfig:
     max_turns: int
     max_start_length: int
-    max_prompt_length: int 
+    max_prompt_length: int
     max_response_length: int
     max_obs_length: int
     num_gpus: int
     no_think_rl: bool=False
     search_url: str = None
     topk: int = 3
+    rind_threshold: float = 1.2
 
 class LLMGenerationManager:
     def __init__(
@@ -193,21 +194,22 @@ class LLMGenerationManager:
             then remove padding from output
         """
         num_gpus = self.config.num_gpus
+        active_batch.meta_info["rind_threshold"] = float(self.config.rind_threshold)
         if num_gpus <= 1:
             return self.actor_rollout_wg.generate_sequences(active_batch)
-            
+
         batch_size = active_batch.batch['input_ids'].shape[0]
         remainder = batch_size % num_gpus
-        
+
         for key in active_batch.batch.keys():
             active_batch.batch[key] = active_batch.batch[key].long()
         if remainder == 0:
             return self.actor_rollout_wg.generate_sequences(active_batch)
-        
+
         # Add padding sequences
         padding_size = num_gpus - remainder
         padded_batch = {}
-        
+
         for k, v in active_batch.batch.items():
             # Use first sequence as padding template
             pad_sequence = v[0:1].repeat(padding_size, *[1] * (len(v.shape) - 1))
@@ -216,6 +218,7 @@ class LLMGenerationManager:
         padded_active_batch = DataProto.from_dict(padded_batch)
         for key in padded_active_batch.batch.keys():
             padded_active_batch.batch[key] = padded_active_batch.batch[key].long()
+        padded_active_batch.meta_info.update(active_batch.meta_info)
 
         # Generate with padded batch
         padded_output = self.actor_rollout_wg.generate_sequences(padded_active_batch)
