@@ -438,6 +438,7 @@ class ActorRolloutRefWorker(Worker):
         prompts = prompts.to('cuda')
         # set to False if it is validation
         recompute_log_prob = prompts.meta_info.get('recompute_log_prob', True)
+        theta = prompts.meta_info.get('rind_threshold', 1.2)
 
         assert self._is_rollout
         if self._is_offload_param:
@@ -484,7 +485,7 @@ class ActorRolloutRefWorker(Worker):
                 self.tokenizer,
                 prompt_ids.tolist(),
                 token_ids.tolist(),
-                theta=1.2,
+                theta=theta,
             )
             sentence_rewards[b] = rewards
             gc.collect()
