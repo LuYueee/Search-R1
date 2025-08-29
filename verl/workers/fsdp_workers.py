@@ -484,7 +484,7 @@ class ActorRolloutRefWorker(Worker):
                 self.tokenizer,
                 prompt_ids.tolist(),
                 token_ids.tolist(),
-                theta=1.2,
+                theta=self.config.reward_model.get('rind_threshold', 1.2),
             )
             sentence_rewards[b] = rewards
             gc.collect()

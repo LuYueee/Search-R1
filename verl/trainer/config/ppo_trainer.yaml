@@ -148,6 +148,7 @@ reward_model:
   lambda_search_num: 0.2
   lambda_repeat_search_num: 0.4
   lambda_episode: 1.0
+  rind_threshold: 1.2
   model_path: "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/models/qwen2.5-7b-instruct-1m"
 
 retriever:
