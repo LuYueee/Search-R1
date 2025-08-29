@@ -54,6 +54,7 @@ class RewardManager():
 
         already_print_data_sources = {}
         all_scores = []
+        sample_confusions = []
 
         for i in range(len(data)):
             data_item = data[i]
@@ -81,17 +82,38 @@ class RewardManager():
             sequences = torch.cat((valid_prompt_ids, response_ids[response_positions]))
             sequences_str = self.tokenizer.decode(sequences)
 
+            response_str = self.tokenizer.decode(response_ids[response_positions])
+            all_sentence_count = len([s for s in re.split(r'[.!?]', response_str) if s.strip()])
+
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            tp = fp = tn = fn = 0
             for pos, val in rewards:
                 if pos < valid_response_length:
                     reward_pos = int(response_positions[pos].item())
                     reward_tensor[i, reward_pos] = val
+                    if val == 2:
+                        tp += 1
+                    elif val == -2:
+                        fn += 1
+                    elif val == -1:
+                        fp += 1
+                    elif val == 1:
+                        tn += 1
                     #end_token_id = response_ids[reward_pos].item()
                     #end_token_str = self.tokenizer.decode([end_token_id])
                     #start_slice = max(0, pos - 20)
                     #snippet_ids = response_ids[response_positions[start_slice:pos + 1]].tolist()
                     #snippet_str = self.tokenizer.decode(snippet_ids)
                     #print( f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}" )
+
+            sample_confusions.append({
+                'tp': tp,
+                'fp': fp,
+                'tn': tn,
+                'fn': fn,
+                'decisions': tp + fp + tn + fn,
+                'sentences': all_sentence_count,
+            })
 
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
@@ -168,6 +190,99 @@ class RewardManager():
             f"[DEBUG][Step] sample/return_mean: {return_mean:.4f}, /std: {return_std:.4f}, /min: {return_min:.4f}, "
             f"/max: {return_max:.4f}, /nonzero_steps_mean: {nz_steps_mean:.4f}, /len_mean: {len_mean:.4f}"
         )
+
+        # Compute decision-level confusion matrix statistics
+        if sample_confusions:
+            def _pct(num, denom):
+                return num / denom if denom > 0 else 0.0
+
+            tp_micro = sum(s['tp'] for s in sample_confusions)
+            fp_micro = sum(s['fp'] for s in sample_confusions)
+            tn_micro = sum(s['tn'] for s in sample_confusions)
+            fn_micro = sum(s['fn'] for s in sample_confusions)
+            dec_micro = sum(s['decisions'] for s in sample_confusions)
+            sent_micro = sum(s['sentences'] for s in sample_confusions)
+
+            tp_pct_micro = _pct(tp_micro, dec_micro)
+            fn_pct_micro = _pct(fn_micro, dec_micro)
+            fp_pct_micro = _pct(fp_micro, dec_micro)
+            tn_pct_micro = _pct(tn_micro, dec_micro)
+
+            tp_pct_micro_all = _pct(tp_micro, sent_micro)
+            fn_pct_micro_all = _pct(fn_micro, sent_micro)
+            fp_pct_micro_all = _pct(fp_micro, sent_micro)
+            tn_pct_micro_all = _pct(tn_micro, sent_micro)
+
+            prec_micro = _pct(tp_micro, tp_micro + fp_micro)
+            rec_micro = _pct(tp_micro, tp_micro + fn_micro)
+            f1_micro = (
+                2 * prec_micro * rec_micro / (prec_micro + rec_micro)
+                if (prec_micro + rec_micro) > 0
+                else 0.0
+            )
+            cov_micro = _pct(dec_micro, sent_micro)
+
+            tp_dec_list = []
+            fn_dec_list = []
+            fp_dec_list = []
+            tn_dec_list = []
+            tp_all_list = []
+            fn_all_list = []
+            fp_all_list = []
+            tn_all_list = []
+            prec_list = []
+            rec_list = []
+            f1_list = []
+            cov_list = []
+            for s in sample_confusions:
+                dec = s['decisions']
+                sent = s['sentences']
+                tp, fp, tn, fn = s['tp'], s['fp'], s['tn'], s['fn']
+                tp_dec_list.append(_pct(tp, dec))
+                fn_dec_list.append(_pct(fn, dec))
+                fp_dec_list.append(_pct(fp, dec))
+                tn_dec_list.append(_pct(tn, dec))
+                tp_all_list.append(_pct(tp, sent))
+                fn_all_list.append(_pct(fn, sent))
+                fp_all_list.append(_pct(fp, sent))
+                tn_all_list.append(_pct(tn, sent))
+                prec = _pct(tp, tp + fp)
+                rec = _pct(tp, tp + fn)
+                f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
+                prec_list.append(prec)
+                rec_list.append(rec)
+                f1_list.append(f1)
+                cov_list.append(_pct(dec, sent))
+
+            tp_pct_macro = np.mean(tp_dec_list) if tp_dec_list else 0.0
+            fn_pct_macro = np.mean(fn_dec_list) if fn_dec_list else 0.0
+            fp_pct_macro = np.mean(fp_dec_list) if fp_dec_list else 0.0
+            tn_pct_macro = np.mean(tn_dec_list) if tn_dec_list else 0.0
+            tp_pct_macro_all = np.mean(tp_all_list) if tp_all_list else 0.0
+            fn_pct_macro_all = np.mean(fn_all_list) if fn_all_list else 0.0
+            fp_pct_macro_all = np.mean(fp_all_list) if fp_all_list else 0.0
+            tn_pct_macro_all = np.mean(tn_all_list) if tn_all_list else 0.0
+            prec_macro = np.mean(prec_list) if prec_list else 0.0
+            rec_macro = np.mean(rec_list) if rec_list else 0.0
+            f1_macro = np.mean(f1_list) if f1_list else 0.0
+            cov_macro = np.mean(cov_list) if cov_list else 0.0
+
+            print(
+                f"[DEBUG][Decision][Micro] per_decision TP%: {tp_pct_micro:.4f}, FN%: {fn_pct_micro:.4f}, FP%: {fp_pct_micro:.4f}, TN%: {tn_pct_micro:.4f}, "
+                f"Precision: {prec_micro:.4f}, Recall: {rec_micro:.4f}, F1: {f1_micro:.4f}"
+            )
+            print(
+                f"[DEBUG][Decision][Micro] per_all     TP%: {tp_pct_micro_all:.4f}, FN%: {fn_pct_micro_all:.4f}, FP%: {fp_pct_micro_all:.4f}, TN%: {tn_pct_micro_all:.4f}, "
+                f"DecisionCoverage: {cov_micro:.4f}"
+            )
+            print(
+                f"[DEBUG][Decision][Macro] per_decision TP%: {tp_pct_macro:.4f}, FN%: {fn_pct_macro:.4f}, FP%: {fp_pct_macro:.4f}, TN%: {tn_pct_macro:.4f}, "
+                f"Precision: {prec_macro:.4f}, Recall: {rec_macro:.4f}, F1: {f1_macro:.4f}"
+            )
+            print(
+                f"[DEBUG][Decision][Macro] per_all     TP%: {tp_pct_macro_all:.4f}, FN%: {fn_pct_macro_all:.4f}, FP%: {fp_pct_macro_all:.4f}, TN%: {tn_pct_macro_all:.4f}, "
+                f"DecisionCoverage: {cov_macro:.4f}"
+            )
 
         return reward_tensor
 
