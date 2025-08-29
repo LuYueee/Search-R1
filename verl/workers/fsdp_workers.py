@@ -434,7 +434,7 @@ class ActorRolloutRefWorker(Worker):
         return output
         
     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
-    def generate_sequences(self, prompts: DataProto):
+    def generate_sequences(self, prompts: DataProto, theta: float = 1.2):
         prompts = prompts.to('cuda')
         # set to False if it is validation
         recompute_log_prob = prompts.meta_info.get('recompute_log_prob', True)
@@ -484,7 +484,7 @@ class ActorRolloutRefWorker(Worker):
                 self.tokenizer,
                 prompt_ids.tolist(),
                 token_ids.tolist(),
-                theta=self.config.reward_model.get('rind_threshold', 1.2),
+                theta=theta,
             )
             sentence_rewards[b] = rewards
             gc.collect()

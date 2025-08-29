@@ -15,13 +15,14 @@ import requests
 class GenerationConfig:
     max_turns: int
     max_start_length: int
-    max_prompt_length: int 
+    max_prompt_length: int
     max_response_length: int
     max_obs_length: int
     num_gpus: int
     no_think_rl: bool=False
     search_url: str = None
     topk: int = 3
+    rind_threshold: float = 1.2
 
 class LLMGenerationManager:
     def __init__(
@@ -194,7 +195,7 @@ class LLMGenerationManager:
         """
         num_gpus = self.config.num_gpus
         if num_gpus <= 1:
-            return self.actor_rollout_wg.generate_sequences(active_batch)
+            return self.actor_rollout_wg.generate_sequences(active_batch, theta=self.config.rind_threshold)
             
         batch_size = active_batch.batch['input_ids'].shape[0]
         remainder = batch_size % num_gpus
@@ -202,7 +203,7 @@ class LLMGenerationManager:
         for key in active_batch.batch.keys():
             active_batch.batch[key] = active_batch.batch[key].long()
         if remainder == 0:
-            return self.actor_rollout_wg.generate_sequences(active_batch)
+            return self.actor_rollout_wg.generate_sequences(active_batch, theta=self.config.rind_threshold)
         
         # Add padding sequences
         padding_size = num_gpus - remainder
@@ -218,7 +219,7 @@ class LLMGenerationManager:
             padded_active_batch.batch[key] = padded_active_batch.batch[key].long()
 
         # Generate with padded batch
-        padded_output = self.actor_rollout_wg.generate_sequences(padded_active_batch)
+        padded_output = self.actor_rollout_wg.generate_sequences(padded_active_batch, theta=self.config.rind_threshold)
 
         # Remove padding from output tensors
         trimmed_batch = {k: v[:-padding_size] for k, v in padded_output.batch.items()}
