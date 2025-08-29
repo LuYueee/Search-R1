@@ -39,7 +39,12 @@ def _normalize_piece(piece: str) -> str:
 
 
 def build_offsets_from_ids(tokenizer, ids):
-    pieces = tokenizer.convert_ids_to_tokens(ids)
+    if ids is None:
+        return "", []
+    pieces = tokenizer.convert_ids_to_tokens(ids) or []
+    pieces = [p for p in pieces if p is not None]
+    if not pieces:
+        return "", []
     resp_text = tokenizer.convert_tokens_to_string(pieces)
     offsets = []
     cursor = 0
