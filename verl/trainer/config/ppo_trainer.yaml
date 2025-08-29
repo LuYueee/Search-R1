@@ -144,6 +144,7 @@ reward_model:
   retrieval_score: 0
   structure_format_score: 0.2
   final_format_score: 0.1
+  lambda_episode: 1.0
   lambda_task: 2.0
   lambda_search_num: 0.2
   lambda_repeat_search_num: 0.4
