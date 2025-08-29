@@ -34,13 +34,14 @@ class RewardManager():
     """The reward manager.
     """
 
-    def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0.) -> None:
+    def __init__(self, tokenizer, num_examine, structure_format_score=0., final_format_score=0., retrieval_score=0., format_score=0., lambda_episode=1.0) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine
         self.format_score = format_score
         self.structure_format_score = structure_format_score
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
+        self.lambda_episode = lambda_episode
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -105,7 +106,7 @@ class RewardManager():
             )
             if valid_response_length > 0:
                 last_pos = int(response_positions[valid_response_length - 1].item())
-                reward_tensor[i, last_pos] = reward_tensor[i, last_pos] + score
+                reward_tensor[i, last_pos] = reward_tensor[i, last_pos] + self.lambda_episode * score
                 all_scores.append(score)
 
             if data_source not in already_print_data_sources:
@@ -254,13 +255,15 @@ def main_task(config):
         role_worker_mapping[Role.RewardModel] = ray.remote(RewardModelWorker)
         mapping[Role.RewardModel] = global_pool_id
 
-    reward_fn = RewardManager(tokenizer=tokenizer, num_examine=0, 
-                              structure_format_score=config.reward_model.structure_format_score, 
+    reward_fn = RewardManager(tokenizer=tokenizer, num_examine=0,
+                              structure_format_score=config.reward_model.structure_format_score,
                               final_format_score=config.reward_model.final_format_score,
-                              retrieval_score=config.reward_model.retrieval_score)
+                              retrieval_score=config.reward_model.retrieval_score,
+                              lambda_episode=config.reward_model.lambda_episode)
 
     # Note that we always use function-based RM for validation
-    val_reward_fn = RewardManager(tokenizer=tokenizer, num_examine=1)
+    val_reward_fn = RewardManager(tokenizer=tokenizer, num_examine=1,
+                                  lambda_episode=config.reward_model.lambda_episode)
 
     resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
     trainer = RayPPOTrainer(config=config,
