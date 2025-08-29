@@ -350,7 +350,7 @@ class ActorRolloutRefWorker(MegatronWorker):
     #     return output
 
     @register(dispatch_mode=Dispatch.MEGATRON_PP_AS_DP_PROTO)
-    def generate_sequences(self, prompts: DataProto, theta: float = 1.2):
+    def generate_sequences(self, prompts: DataProto):
         assert self._is_rollout
 
         prompts.batch = prompts.batch.cuda()

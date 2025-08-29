@@ -434,10 +434,11 @@ class ActorRolloutRefWorker(Worker):
         return output
         
     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
-    def generate_sequences(self, prompts: DataProto, theta: float = 1.2):
+    def generate_sequences(self, prompts: DataProto):
         prompts = prompts.to('cuda')
         # set to False if it is validation
         recompute_log_prob = prompts.meta_info.get('recompute_log_prob', True)
+        theta = prompts.meta_info.get('rind_threshold', 1.2)
 
         assert self._is_rollout
         if self._is_offload_param:
