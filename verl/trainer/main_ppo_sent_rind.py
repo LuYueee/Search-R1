@@ -19,8 +19,9 @@ from verl import DataProto
 import torch
 from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
-import re
 import numpy as np
+import spacy
+from verl.utils.reward_score.rind_reward import TAG_BOUNDARY_RE, CLOSE_TAG_RE, LEADING_CLOSE_RE
 
 
 def _select_rm_score_fn(data_source):
@@ -42,6 +43,46 @@ class RewardManager():
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
         self.lambda_episode = lambda_episode
+        self.nlp = spacy.load("en_core_web_sm", disable=["ner"])
+
+    def _count_sentences(self, text: str) -> int:
+        doc = self.nlp(text)
+        raw_sents = [span.text for span in doc.sents if span.text.strip()]
+        sentences = []
+        for sent in raw_sents:
+            parts = []
+            cur = 0
+            has_match = False
+            for m in TAG_BOUNDARY_RE.finditer(sent):
+                has_match = True
+                if m.start() > cur:
+                    parts.append(sent[cur:m.start()])
+                parts.append(m.group(0))
+                cur = m.end()
+            if cur < len(sent):
+                parts.append(sent[cur:])
+            if not has_match:
+                m = LEADING_CLOSE_RE.match(sent)
+                if m:
+                    close_part = sent[:m.end()]
+                    if sentences:
+                        sentences[-1] += close_part
+                    else:
+                        sentences.append(close_part)
+                    if m.end() < len(sent):
+                        sentences.append(sent[m.end():])
+                    continue
+            for seg in parts:
+                if not seg.strip():
+                    continue
+                if CLOSE_TAG_RE.fullmatch(seg):
+                    if sentences:
+                        sentences[-1] += seg
+                    else:
+                        sentences.append(seg)
+                else:
+                    sentences.append(seg)
+        return len(sentences)
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -87,7 +128,7 @@ class RewardManager():
 
             # decode response only for sentence counting
             response_str = self.tokenizer.decode(response_ids[response_positions])
-            total_sents = len([s for s in re.split(r'[.!?\n]+', response_str) if s.strip()])
+            total_sents = self._count_sentences(response_str)
 
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
             tp = fp = tn = fn = 0
