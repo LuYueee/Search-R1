@@ -452,6 +452,7 @@ class RayPPOTrainer(object):
             no_think_rl=self.config.algorithm.no_think_rl,
             search_url = self.config.retriever.url,
             topk = self.config.retriever.topk,
+            rind_threshold=self.config.reward_model.rind_threshold,
         )
 
         # Agent config preparation
@@ -481,7 +482,10 @@ class RayPPOTrainer(object):
 
                 # pad to be divisible by dp_size
                 test_gen_batch_padded, pad_size = pad_dataproto_to_divisor(test_gen_batch, self.actor_rollout_wg.world_size)
-                test_output_gen_batch_padded = self.actor_rollout_wg.generate_sequences(test_gen_batch_padded)
+                test_gen_batch_padded.meta_info["rind_threshold"] = self.config.reward_model.rind_threshold
+                test_output_gen_batch_padded = self.actor_rollout_wg.generate_sequences(
+                    test_gen_batch_padded
+                )
                 # unpad
                 test_output_gen_batch = unpad_dataproto(test_output_gen_batch_padded, pad_size=pad_size)
                 print('validation generation end')
@@ -683,6 +687,7 @@ class RayPPOTrainer(object):
             no_think_rl=self.config.algorithm.no_think_rl,
             search_url = self.config.retriever.url,
             topk = self.config.retriever.topk,
+            rind_threshold=self.config.reward_model.rind_threshold,
         )
 
         generation_manager = LLMGenerationManager(
@@ -709,7 +714,10 @@ class RayPPOTrainer(object):
 
                 with _timer('step', timing_raw):
                     if not self.config.do_search:
-                        gen_batch_output = self.actor_rollout_wg.generate_sequences(gen_batch)
+                        gen_batch.meta_info["rind_threshold"] = self.config.reward_model.rind_threshold
+                        gen_batch_output = self.actor_rollout_wg.generate_sequences(
+                            gen_batch
+                        )
 
                         batch.non_tensor_batch['uid'] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))],
                                                                 dtype=object)
