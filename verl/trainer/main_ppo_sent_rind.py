@@ -54,6 +54,8 @@ class RewardManager():
 
         already_print_data_sources = {}
         all_scores = []
+        turns_stats = data.meta_info.get('turns_stats', [])
+        confusion_stats = []
 
         for i in range(len(data)):
             data_item = data[i]
@@ -82,16 +84,23 @@ class RewardManager():
             sequences_str = self.tokenizer.decode(sequences)
 
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            sample_counts = {'TP': 0, 'FP': 0, 'TN': 0, 'FN': 0}
             for pos, val in rewards:
                 if pos < valid_response_length:
                     reward_pos = int(response_positions[pos].item())
                     reward_tensor[i, reward_pos] = val
+                    label = {2: 'TP', -2: 'FN', -1: 'FP', 1: 'TN'}.get(int(val))
+                    if label is not None:
+                        sample_counts[label] += 1
                     #end_token_id = response_ids[reward_pos].item()
                     #end_token_str = self.tokenizer.decode([end_token_id])
                     #start_slice = max(0, pos - 20)
                     #snippet_ids = response_ids[response_positions[start_slice:pos + 1]].tolist()
                     #snippet_str = self.tokenizer.decode(snippet_ids)
                     #print( f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}" )
+            decision_points = sum(sample_counts.values())
+            total_sents = turns_stats[i] if i < len(turns_stats) else decision_points
+            confusion_stats.append((sample_counts, decision_points, total_sents))
 
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
@@ -167,6 +176,86 @@ class RewardManager():
         print(
             f"[DEBUG][Step] sample/return_mean: {return_mean:.4f}, /std: {return_std:.4f}, /min: {return_min:.4f}, "
             f"/max: {return_max:.4f}, /nonzero_steps_mean: {nz_steps_mean:.4f}, /len_mean: {len_mean:.4f}"
+        )
+
+        # Compute confusion matrix statistics for gating decisions
+        micro_counts = {'TP': 0, 'FP': 0, 'TN': 0, 'FN': 0}
+        micro_decisions = 0
+        micro_total_sents = 0
+        macro_dec_ratios = {k: [] for k in micro_counts}
+        macro_all_ratios = {k: [] for k in micro_counts}
+        macro_precisions, macro_recalls, macro_f1s = [], [], []
+        macro_coverages = []
+
+        for counts, dec_points, total_sents in confusion_stats:
+            micro_decisions += dec_points
+            micro_total_sents += total_sents
+            for k in micro_counts:
+                micro_counts[k] += counts[k]
+
+            if dec_points > 0:
+                for k in counts:
+                    macro_dec_ratios[k].append(counts[k] / dec_points)
+                precision = counts['TP'] / (counts['TP'] + counts['FP']) if (counts['TP'] + counts['FP']) > 0 else 0.0
+                recall = counts['TP'] / (counts['TP'] + counts['FN']) if (counts['TP'] + counts['FN']) > 0 else 0.0
+                f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+            else:
+                for k in counts:
+                    macro_dec_ratios[k].append(0.0)
+                precision = recall = f1 = 0.0
+            macro_precisions.append(precision)
+            macro_recalls.append(recall)
+            macro_f1s.append(f1)
+
+            if total_sents > 0:
+                for k in counts:
+                    macro_all_ratios[k].append(counts[k] / total_sents)
+                macro_coverages.append(dec_points / total_sents)
+            else:
+                for k in counts:
+                    macro_all_ratios[k].append(0.0)
+                macro_coverages.append(0.0)
+
+        if micro_decisions > 0:
+            micro_dec_pct = {k: micro_counts[k] / micro_decisions for k in micro_counts}
+        else:
+            micro_dec_pct = {k: 0.0 for k in micro_counts}
+        if micro_total_sents > 0:
+            micro_all_pct = {k: micro_counts[k] / micro_total_sents for k in micro_counts}
+            micro_coverage = micro_decisions / micro_total_sents
+        else:
+            micro_all_pct = {k: 0.0 for k in micro_counts}
+            micro_coverage = 0.0
+        micro_precision = micro_counts['TP'] / (micro_counts['TP'] + micro_counts['FP']) if (micro_counts['TP'] + micro_counts['FP']) > 0 else 0.0
+        micro_recall = micro_counts['TP'] / (micro_counts['TP'] + micro_counts['FN']) if (micro_counts['TP'] + micro_counts['FN']) > 0 else 0.0
+        micro_f1 = 2 * micro_precision * micro_recall / (micro_precision + micro_recall) if (micro_precision + micro_recall) > 0 else 0.0
+
+        macro_dec_pct = {k: float(np.mean(v)) if v else 0.0 for k, v in macro_dec_ratios.items()}
+        macro_all_pct = {k: float(np.mean(v)) if v else 0.0 for k, v in macro_all_ratios.items()}
+        macro_precision = float(np.mean(macro_precisions)) if macro_precisions else 0.0
+        macro_recall = float(np.mean(macro_recalls)) if macro_recalls else 0.0
+        macro_f1 = float(np.mean(macro_f1s)) if macro_f1s else 0.0
+        macro_coverage = float(np.mean(macro_coverages)) if macro_coverages else 0.0
+
+        print(
+            f"[DEBUG][Confusion] micro(decision)/TP%: {micro_dec_pct['TP']:.4f}, /FN%: {micro_dec_pct['FN']:.4f}, "
+            f"/FP%: {micro_dec_pct['FP']:.4f}, /TN%: {micro_dec_pct['TN']:.4f}, /Precision: {micro_precision:.4f}, "
+            f"/Recall: {micro_recall:.4f}, /F1: {micro_f1:.4f}"
+        )
+        print(
+            f"[DEBUG][Confusion] macro(decision)/TP%: {macro_dec_pct['TP']:.4f}, /FN%: {macro_dec_pct['FN']:.4f}, "
+            f"/FP%: {macro_dec_pct['FP']:.4f}, /TN%: {macro_dec_pct['TN']:.4f}, /Precision: {macro_precision:.4f}, "
+            f"/Recall: {macro_recall:.4f}, /F1: {macro_f1:.4f}"
+        )
+        print(
+            f"[DEBUG][Confusion] micro(all)/TP%: {micro_all_pct['TP']:.4f}, /FN%: {micro_all_pct['FN']:.4f}, "
+            f"/FP%: {micro_all_pct['FP']:.4f}, /TN%: {micro_all_pct['TN']:.4f}, /Precision: {micro_precision:.4f}, "
+            f"/Recall: {micro_recall:.4f}, /F1: {micro_f1:.4f}, /DecisionCoverage: {micro_coverage:.4f}"
+        )
+        print(
+            f"[DEBUG][Confusion] macro(all)/TP%: {macro_all_pct['TP']:.4f}, /FN%: {macro_all_pct['FN']:.4f}, "
+            f"/FP%: {macro_all_pct['FP']:.4f}, /TN%: {macro_all_pct['TN']:.4f}, /Precision: {macro_precision:.4f}, "
+            f"/Recall: {macro_recall:.4f}, /F1: {macro_f1:.4f}, /DecisionCoverage: {macro_coverage:.4f}"
         )
 
         return reward_tensor
