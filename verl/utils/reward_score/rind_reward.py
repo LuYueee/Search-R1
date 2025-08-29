@@ -39,7 +39,32 @@ def _normalize_piece(piece: str) -> str:
 
 
 def build_offsets_from_ids(tokenizer, ids):
-    pieces = tokenizer.convert_ids_to_tokens(ids)
+    """Return text and character offsets for given token ids.
+
+    Some tokenizers (e.g. fast tokenizers used with vLLM) may return
+    ``None`` for unknown or special token ids.  The previous implementation
+    assumed ``convert_ids_to_tokens`` always returned a list of strings, which
+    led to a ``TypeError`` when a ``None`` value was passed to
+    ``convert_tokens_to_string``.  This function now defensively filters out
+    ``None`` ids/tokens and gracefully handles empty inputs so the reward
+    computation can continue without crashing.
+    """
+
+    if ids is None:
+        return "", []
+    if isinstance(ids, torch.Tensor):
+        ids = ids.tolist()
+    # Filter out invalid ids such as -100 or None
+    ids = [int(t) for t in ids if t is not None and t != -100]
+    if not ids:
+        return "", []
+
+    pieces = tokenizer.convert_ids_to_tokens(ids) or []
+    # ``pieces`` can contain ``None`` values for unknown tokens
+    pieces = [p for p in pieces if p is not None]
+    if not pieces:
+        return "", []
+
     resp_text = tokenizer.convert_tokens_to_string(pieces)
     offsets = []
     cursor = 0
