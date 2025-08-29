@@ -55,6 +55,15 @@ class RewardManager():
         already_print_data_sources = {}
         all_scores = []
 
+        # confusion matrix statistics
+        total_tp = total_fp = total_tn = total_fn = 0
+        total_sentences = 0
+        total_decision = 0
+        sample_confusions = []
+
+        def _safe_div(n, d):
+            return n / d if d else 0
+
         for i in range(len(data)):
             data_item = data[i]
 
@@ -82,16 +91,42 @@ class RewardManager():
             sequences_str = self.tokenizer.decode(sequences)
 
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            num_sent = 0
+            sample_tp = sample_fp = sample_tn = sample_fn = 0
             for pos, val in rewards:
                 if pos < valid_response_length:
+                    num_sent += 1
                     reward_pos = int(response_positions[pos].item())
                     reward_tensor[i, reward_pos] = val
+                    if val != 0:
+                        total_decision += 1
+                        if val > 1.5:
+                            total_tp += 1
+                            sample_tp += 1
+                        elif val < -1.5:
+                            total_fn += 1
+                            sample_fn += 1
+                        elif val < 0:
+                            total_fp += 1
+                            sample_fp += 1
+                        else:
+                            total_tn += 1
+                            sample_tn += 1
                     #end_token_id = response_ids[reward_pos].item()
                     #end_token_str = self.tokenizer.decode([end_token_id])
                     #start_slice = max(0, pos - 20)
                     #snippet_ids = response_ids[response_positions[start_slice:pos + 1]].tolist()
                     #snippet_str = self.tokenizer.decode(snippet_ids)
                     #print( f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}" )
+            total_sentences += num_sent
+            sample_confusions.append({
+                'tp': sample_tp,
+                'fp': sample_fp,
+                'tn': sample_tn,
+                'fn': sample_fn,
+                'nonzero': sample_tp + sample_fp + sample_tn + sample_fn,
+                'total': num_sent,
+            })
 
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
@@ -167,6 +202,58 @@ class RewardManager():
         print(
             f"[DEBUG][Step] sample/return_mean: {return_mean:.4f}, /std: {return_std:.4f}, /min: {return_min:.4f}, "
             f"/max: {return_max:.4f}, /nonzero_steps_mean: {nz_steps_mean:.4f}, /len_mean: {len_mean:.4f}"
+        )
+
+        # Confusion matrix metrics
+        micro_tp_dec = _safe_div(total_tp, total_decision)
+        micro_fn_dec = _safe_div(total_fn, total_decision)
+        micro_fp_dec = _safe_div(total_fp, total_decision)
+        micro_tn_dec = _safe_div(total_tn, total_decision)
+
+        micro_tp_all = _safe_div(total_tp, total_sentences)
+        micro_fn_all = _safe_div(total_fn, total_sentences)
+        micro_fp_all = _safe_div(total_fp, total_sentences)
+        micro_tn_all = _safe_div(total_tn, total_sentences)
+
+        micro_prec = _safe_div(total_tp, total_tp + total_fp)
+        micro_rec = _safe_div(total_tp, total_tp + total_fn)
+        micro_f1 = _safe_div(2 * micro_prec * micro_rec, micro_prec + micro_rec)
+        micro_cov = _safe_div(total_decision, total_sentences)
+
+        macro_tp_dec = np.mean([_safe_div(s['tp'], s['nonzero']) for s in sample_confusions]) if sample_confusions else 0.0
+        macro_fn_dec = np.mean([_safe_div(s['fn'], s['nonzero']) for s in sample_confusions]) if sample_confusions else 0.0
+        macro_fp_dec = np.mean([_safe_div(s['fp'], s['nonzero']) for s in sample_confusions]) if sample_confusions else 0.0
+        macro_tn_dec = np.mean([_safe_div(s['tn'], s['nonzero']) for s in sample_confusions]) if sample_confusions else 0.0
+
+        macro_tp_all = np.mean([_safe_div(s['tp'], s['total']) for s in sample_confusions]) if sample_confusions else 0.0
+        macro_fn_all = np.mean([_safe_div(s['fn'], s['total']) for s in sample_confusions]) if sample_confusions else 0.0
+        macro_fp_all = np.mean([_safe_div(s['fp'], s['total']) for s in sample_confusions]) if sample_confusions else 0.0
+        macro_tn_all = np.mean([_safe_div(s['tn'], s['total']) for s in sample_confusions]) if sample_confusions else 0.0
+
+        macro_p_list = [_safe_div(s['tp'], s['tp'] + s['fp']) for s in sample_confusions]
+        macro_r_list = [_safe_div(s['tp'], s['tp'] + s['fn']) for s in sample_confusions]
+        macro_prec = np.mean(macro_p_list) if sample_confusions else 0.0
+        macro_rec = np.mean(macro_r_list) if sample_confusions else 0.0
+        macro_f1 = np.mean([_safe_div(2 * p * r, p + r) for p, r in zip(macro_p_list, macro_r_list)]) if sample_confusions else 0.0
+        macro_cov = np.mean([_safe_div(s['nonzero'], s['total']) for s in sample_confusions]) if sample_confusions else 0.0
+
+        print(
+            f"[DEBUG][Confusion][Micro] decision TP%: {micro_tp_dec:.4f}, FN%: {micro_fn_dec:.4f}, "
+            f"FP%: {micro_fp_dec:.4f}, TN%: {micro_tn_dec:.4f}, Precision: {micro_prec:.4f}, "
+            f"Recall: {micro_rec:.4f}, F1: {micro_f1:.4f}"
+        )
+        print(
+            f"[DEBUG][Confusion][Micro-All] TP%: {micro_tp_all:.4f}, FN%: {micro_fn_all:.4f}, "
+            f"FP%: {micro_fp_all:.4f}, TN%: {micro_tn_all:.4f}, DecisionCoverage: {micro_cov:.4f}"
+        )
+        print(
+            f"[DEBUG][Confusion][Macro] decision TP%: {macro_tp_dec:.4f}, FN%: {macro_fn_dec:.4f}, "
+            f"FP%: {macro_fp_dec:.4f}, TN%: {macro_tn_dec:.4f}, Precision: {macro_prec:.4f}, "
+            f"Recall: {macro_rec:.4f}, F1: {macro_f1:.4f}"
+        )
+        print(
+            f"[DEBUG][Confusion][Macro-All] TP%: {macro_tp_all:.4f}, FN%: {macro_fn_all:.4f}, "
+            f"FP%: {macro_fp_all:.4f}, TN%: {macro_tn_all:.4f}, DecisionCoverage: {macro_cov:.4f}"
         )
 
         return reward_tensor
