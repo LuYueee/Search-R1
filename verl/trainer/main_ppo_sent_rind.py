@@ -19,8 +19,9 @@ from verl import DataProto
 import torch
 from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
-import re
 import numpy as np
+import spacy
+from verl.utils.reward_score.rind_reward import TAG_BOUNDARY_RE, CLOSE_TAG_RE, LEADING_CLOSE_RE
 
 
 def _select_rm_score_fn(data_source):
@@ -42,6 +43,46 @@ class RewardManager():
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
         self.lambda_episode = lambda_episode
+        self.nlp = spacy.load("en_core_web_sm", disable=["ner"])
+
+    def _count_sentences(self, text: str) -> int:
+        doc = self.nlp(text)
+        raw_sents = [span.text for span in doc.sents if span.text.strip()]
+        sentences = []
+        for sent in raw_sents:
+            parts = []
+            cur = 0
+            has_match = False
+            for m in TAG_BOUNDARY_RE.finditer(sent):
+                has_match = True
+                if m.start() > cur:
+                    parts.append(sent[cur:m.start()])
+                parts.append(m.group(0))
+                cur = m.end()
+            if cur < len(sent):
+                parts.append(sent[cur:])
+            if not has_match:
+                m = LEADING_CLOSE_RE.match(sent)
+                if m:
+                    close_part = sent[:m.end()]
+                    if sentences:
+                        sentences[-1] += close_part
+                    else:
+                        sentences.append(close_part)
+                    if m.end() < len(sent):
+                        sentences.append(sent[m.end():])
+                    continue
+            for seg in parts:
+                if not seg.strip():
+                    continue
+                if CLOSE_TAG_RE.fullmatch(seg):
+                    if sentences:
+                        sentences[-1] += seg
+                    else:
+                        sentences.append(seg)
+                else:
+                    sentences.append(seg)
+        return len(sentences)
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -54,6 +95,10 @@ class RewardManager():
 
         already_print_data_sources = {}
         all_scores = []
+
+        # containers for confusion matrix statistics
+        tp_list, fp_list, tn_list, fn_list = [], [], [], []
+        decision_counts, sentence_counts = [], []
 
         for i in range(len(data)):
             data_item = data[i]
@@ -81,17 +126,37 @@ class RewardManager():
             sequences = torch.cat((valid_prompt_ids, response_ids[response_positions]))
             sequences_str = self.tokenizer.decode(sequences)
 
+            # decode response only for sentence counting
+            response_str = self.tokenizer.decode(response_ids[response_positions])
+            total_sents = self._count_sentences(response_str)
+
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            tp = fp = tn = fn = 0
             for pos, val in rewards:
                 if pos < valid_response_length:
                     reward_pos = int(response_positions[pos].item())
                     reward_tensor[i, reward_pos] = val
+                    if val == 2:
+                        tp += 1
+                    elif val == -2:
+                        fn += 1
+                    elif val == -1:
+                        fp += 1
+                    elif val == 1:
+                        tn += 1
                     #end_token_id = response_ids[reward_pos].item()
                     #end_token_str = self.tokenizer.decode([end_token_id])
                     #start_slice = max(0, pos - 20)
                     #snippet_ids = response_ids[response_positions[start_slice:pos + 1]].tolist()
                     #snippet_str = self.tokenizer.decode(snippet_ids)
                     #print( f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}" )
+
+            tp_list.append(tp)
+            fp_list.append(fp)
+            tn_list.append(tn)
+            fn_list.append(fn)
+            decision_counts.append(tp + fp + tn + fn)
+            sentence_counts.append(total_sents)
 
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
@@ -167,6 +232,67 @@ class RewardManager():
         print(
             f"[DEBUG][Step] sample/return_mean: {return_mean:.4f}, /std: {return_std:.4f}, /min: {return_min:.4f}, "
             f"/max: {return_max:.4f}, /nonzero_steps_mean: {nz_steps_mean:.4f}, /len_mean: {len_mean:.4f}"
+        )
+
+        # === Confusion matrix based metrics ===
+        tp_arr = np.array(tp_list)
+        fp_arr = np.array(fp_list)
+        tn_arr = np.array(tn_list)
+        fn_arr = np.array(fn_list)
+        decision_arr = np.array(decision_counts)
+        sent_arr = np.array(sentence_counts)
+
+        def safe_div(n, d):
+            return float(n) / float(d) if d else 0.0
+
+        # micro aggregation
+        m_tp, m_fp, m_tn, m_fn = tp_arr.sum(), fp_arr.sum(), tn_arr.sum(), fn_arr.sum()
+        m_decision = decision_arr.sum()
+        m_sent = sent_arr.sum()
+        micro_precision = safe_div(m_tp, m_tp + m_fp)
+        micro_recall = safe_div(m_tp, m_tp + m_fn)
+        micro_f1 = safe_div(2 * micro_precision * micro_recall, micro_precision + micro_recall)
+
+        print(
+            "[DEBUG][Confusion][Micro-Dec] "
+            f"TP%:{safe_div(m_tp, m_decision):.4f}, FN%:{safe_div(m_fn, m_decision):.4f}, "
+            f"FP%:{safe_div(m_fp, m_decision):.4f}, TN%:{safe_div(m_tn, m_decision):.4f}, "
+            f"P:{micro_precision:.4f}, R:{micro_recall:.4f}, F1:{micro_f1:.4f}"
+        )
+        print(
+            "[DEBUG][Confusion][Micro-All] "
+            f"TP%:{safe_div(m_tp, m_sent):.4f}, FN%:{safe_div(m_fn, m_sent):.4f}, "
+            f"FP%:{safe_div(m_fp, m_sent):.4f}, TN%:{safe_div(m_tn, m_sent):.4f}, "
+            f"DecisionCoverage:{safe_div(m_decision, m_sent):.4f}"
+        )
+
+        # macro aggregation
+        macro_tp_dec = np.mean([safe_div(tp, d) for tp, d in zip(tp_arr, decision_arr)])
+        macro_fn_dec = np.mean([safe_div(fn, d) for fn, d in zip(fn_arr, decision_arr)])
+        macro_fp_dec = np.mean([safe_div(fp, d) for fp, d in zip(fp_arr, decision_arr)])
+        macro_tn_dec = np.mean([safe_div(tn, d) for tn, d in zip(tn_arr, decision_arr)])
+        macro_precision = np.mean([safe_div(tp, tp + fp) for tp, fp in zip(tp_arr, fp_arr)])
+        macro_recall = np.mean([safe_div(tp, tp + fn) for tp, fn in zip(tp_arr, fn_arr)])
+        macro_f1 = np.mean([
+            safe_div(2 * safe_div(tp, tp + fp) * safe_div(tp, tp + fn),
+                     safe_div(tp, tp + fp) + safe_div(tp, tp + fn))
+            for tp, fp, fn in zip(tp_arr, fp_arr, fn_arr)
+        ])
+        macro_tp_all = np.mean([safe_div(tp, s) for tp, s in zip(tp_arr, sent_arr)])
+        macro_fn_all = np.mean([safe_div(fn, s) for fn, s in zip(fn_arr, sent_arr)])
+        macro_fp_all = np.mean([safe_div(fp, s) for fp, s in zip(fp_arr, sent_arr)])
+        macro_tn_all = np.mean([safe_div(tn, s) for tn, s in zip(tn_arr, sent_arr)])
+        macro_decision_cov = np.mean([safe_div(d, s) for d, s in zip(decision_arr, sent_arr)])
+
+        print(
+            "[DEBUG][Confusion][Macro-Dec] "
+            f"TP%:{macro_tp_dec:.4f}, FN%:{macro_fn_dec:.4f}, FP%:{macro_fp_dec:.4f}, "
+            f"TN%:{macro_tn_dec:.4f}, P:{macro_precision:.4f}, R:{macro_recall:.4f}, F1:{macro_f1:.4f}"
+        )
+        print(
+            "[DEBUG][Confusion][Macro-All] "
+            f"TP%:{macro_tp_all:.4f}, FN%:{macro_fn_all:.4f}, FP%:{macro_fp_all:.4f}, "
+            f"TN%:{macro_tn_all:.4f}, DecisionCoverage:{macro_decision_cov:.4f}"
         )
 
         return reward_tensor
