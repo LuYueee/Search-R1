@@ -39,7 +39,7 @@ from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
 import numpy as np
 import gc
-from verl.utils.rind_reward import RINDCalculator, compute_sentence_end_rewards
+from verl.utils.reward_score.rind_reward import RINDCalculator, compute_sentence_end_rewards
 
 from codetiming import Timer
 
