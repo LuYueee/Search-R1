@@ -319,10 +319,13 @@ def compute_score_em(solution_str, ground_truth, model_path, structure_format_sc
         final_em_format_score = max(0.0, min(1.0, final_em_format_score))
     
     # Rewards for redundant retrieval
-    n_search = count_search_tags(solution_str)
-    n_repeat = count_repeat_information(solution_str)  
+    response_str = solution_str[solution_str.find('<|im_start|>assistant') + 21:] if '<|im_start|>assistant' in solution_str else solution_str
+    n_search = count_search_tags(response_str)
+    n_repeat = count_repeat_information(response_str)  
+
     # Apply penalties and calculate final reward
-    final_score = max(0, lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat)
+    #final_score = max(0, lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat)
+    final_score = lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat
     
     if do_print:
         print(f"EM Score: {em_check(answer, ground_truth['target'])}")
