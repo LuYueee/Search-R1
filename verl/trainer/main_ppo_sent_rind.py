@@ -19,8 +19,9 @@ from verl import DataProto
 import torch
 from verl.utils.reward_score import qa_em, qa_em_format
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
-import re
 import numpy as np
+import spacy
+from verl.utils.reward_score.rind_reward import TAG_BOUNDARY_RE, CLOSE_TAG_RE, LEADING_CLOSE_RE
 
 
 def _select_rm_score_fn(data_source):
@@ -42,6 +43,46 @@ class RewardManager():
         self.final_format_score = final_format_score
         self.retrieval_score = retrieval_score
         self.lambda_episode = lambda_episode
+        self.nlp = spacy.load("en_core_web_sm", disable=["ner"])
+
+    def _count_sentences(self, text: str) -> int:
+        doc = self.nlp(text)
+        raw_sents = [span.text for span in doc.sents if span.text.strip()]
+        sentences = []
+        for sent in raw_sents:
+            parts = []
+            cur = 0
+            has_match = False
+            for m in TAG_BOUNDARY_RE.finditer(sent):
+                has_match = True
+                if m.start() > cur:
+                    parts.append(sent[cur:m.start()])
+                parts.append(m.group(0))
+                cur = m.end()
+            if cur < len(sent):
+                parts.append(sent[cur:])
+            if not has_match:
+                m = LEADING_CLOSE_RE.match(sent)
+                if m:
+                    close_part = sent[:m.end()]
+                    if sentences:
+                        sentences[-1] += close_part
+                    else:
+                        sentences.append(close_part)
+                    if m.end() < len(sent):
+                        sentences.append(sent[m.end():])
+                    continue
+            for seg in parts:
+                if not seg.strip():
+                    continue
+                if CLOSE_TAG_RE.fullmatch(seg):
+                    if sentences:
+                        sentences[-1] += seg
+                    else:
+                        sentences.append(seg)
+                else:
+                    sentences.append(seg)
+        return len(sentences)
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -54,6 +95,10 @@ class RewardManager():
 
         already_print_data_sources = {}
         all_scores = []
+
+        # containers for confusion matrix statistics
+        tp_list, fp_list, tn_list, fn_list = [], [], [], []
+        decision_counts, sentence_counts = [], []
 
         for i in range(len(data)):
             data_item = data[i]
@@ -81,17 +126,37 @@ class RewardManager():
             sequences = torch.cat((valid_prompt_ids, response_ids[response_positions]))
             sequences_str = self.tokenizer.decode(sequences)
 
+            # decode response only for sentence counting
+            response_str = self.tokenizer.decode(response_ids[response_positions])
+            total_sents = self._count_sentences(response_str)
+
             rewards = data_item.non_tensor_batch.get('sentence_rewards', [])
+            tp = fp = tn = fn = 0
             for pos, val in rewards:
                 if pos < valid_response_length:
                     reward_pos = int(response_positions[pos].item())
                     reward_tensor[i, reward_pos] = val
+                    if val == 2:
+                        tp += 1
+                    elif val == -2:
+                        fn += 1
+                    elif val == -1:
+                        fp += 1
+                    elif val == 1:
+                        tn += 1
                     #end_token_id = response_ids[reward_pos].item()
                     #end_token_str = self.tokenizer.decode([end_token_id])
                     #start_slice = max(0, pos - 20)
                     #snippet_ids = response_ids[response_positions[start_slice:pos + 1]].tolist()
                     #snippet_str = self.tokenizer.decode(snippet_ids)
                     #print( f"句末token: {end_token_str}, 句末token索引: {reward_pos}, 句子片段: {snippet_str}，句末奖励：{val}" )
+
+            tp_list.append(tp)
+            fp_list.append(fp)
+            tn_list.append(tn)
+            fn_list.append(fn)
+            decision_counts.append(tp + fp + tn + fn)
+            sentence_counts.append(total_sents)
 
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
@@ -128,18 +193,41 @@ class RewardManager():
         else:
             resp_mask = data.batch['attention_mask'][:, prompt_len:]
         resp_mask = resp_mask.to(reward_tensor.device)
-        valid_rewards = reward_tensor[resp_mask.bool()]
+        N_total = int(resp_mask.sum().item())
 
-        if valid_rewards.numel() > 0:
-            vr = valid_rewards.cpu().numpy()
-            step_mean = vr.mean()
-            step_std = vr.std()
-            step_min = vr.min()
-            step_max = vr.max()
-            pos_rate = (vr > 0).mean()
-            neg_rate = (vr < 0).mean()
+        tp = int(np.sum(tp_list))
+        fp = int(np.sum(fp_list))
+        tn = int(np.sum(tn_list))
+        fn = int(np.sum(fn_list))
+
+        S_dec = 2 * tp + tn - fp - 2 * fn
+        SS_dec = 4 * (tp + fn) + (tn + fp)
+
+        if N_total > 0:
+            step_mean = S_dec / N_total
+            step_var = max(0.0, SS_dec / N_total - step_mean * step_mean)
+            step_std = float(np.sqrt(step_var))
+            pos_rate = (tp + tn) / N_total
+            neg_rate = (fp + fn) / N_total
         else:
-            step_mean = step_std = step_min = step_max = pos_rate = neg_rate = 0.0
+            step_mean = step_std = pos_rate = neg_rate = 0.0
+
+        candidates = []
+        if tp > 0:
+            candidates.append(2.0)
+        if tn > 0:
+            candidates.append(1.0)
+        if fp > 0:
+            candidates.append(-1.0)
+        if fn > 0:
+            candidates.append(-2.0)
+        if N_total > (tp + fp + tn + fn):
+            candidates.append(0.0)
+        if candidates:
+            step_min = min(candidates)
+            step_max = max(candidates)
+        else:
+            step_min = step_max = 0.0
 
         print(
             f"[DEBUG][Step] step_reward/mean: {step_mean:.4f}, /std: {step_std:.4f}, /min: {step_min:.4f}, "
@@ -167,6 +255,84 @@ class RewardManager():
         print(
             f"[DEBUG][Step] sample/return_mean: {return_mean:.4f}, /std: {return_std:.4f}, /min: {return_min:.4f}, "
             f"/max: {return_max:.4f}, /nonzero_steps_mean: {nz_steps_mean:.4f}, /len_mean: {len_mean:.4f}"
+        )
+
+        # === Confusion matrix based metrics ===
+        tp_arr = np.array(tp_list)
+        fp_arr = np.array(fp_list)
+        tn_arr = np.array(tn_list)
+        fn_arr = np.array(fn_list)
+        decision_arr = np.array(decision_counts)
+        sent_arr = np.array(sentence_counts)
+
+        def safe_div(n, d):
+            return float(n) / float(d) if d else 0.0
+
+        # micro aggregation
+        m_tp, m_fp, m_tn, m_fn = tp, fp, tn, fn
+        m_decision = decision_arr.sum()
+        m_sent = sent_arr.sum()
+        micro_precision = safe_div(m_tp, m_tp + m_fp)
+        micro_recall = safe_div(m_tp, m_tp + m_fn)
+        micro_f1 = safe_div(2 * micro_precision * micro_recall, micro_precision + micro_recall)
+
+        print(
+            "[DEBUG][Confusion][Micro-Dec] "
+            f"TP%:{safe_div(m_tp, m_decision):.4f}, FN%:{safe_div(m_fn, m_decision):.4f}, "
+            f"FP%:{safe_div(m_fp, m_decision):.4f}, TN%:{safe_div(m_tn, m_decision):.4f}, "
+            f"Precision:{micro_precision:.4f}, Recall:{micro_recall:.4f}, F1:{micro_f1:.4f}"
+        )
+        print(
+            "[DEBUG][Confusion][Micro-All] "
+            f"TP%:{safe_div(m_tp, m_sent):.4f}, FN%:{safe_div(m_fn, m_sent):.4f}, "
+            f"FP%:{safe_div(m_fp, m_sent):.4f}, TN%:{safe_div(m_tn, m_sent):.4f}, "
+            f"Precision:{micro_precision:.4f}, Recall:{micro_recall:.4f}, F1:{micro_f1:.4f}, "
+            f"DecisionCoverage:{safe_div(m_decision, m_sent):.4f}"
+        )
+
+        # macro aggregation with per-metric denominator masks
+        def mean_or0(x):
+            x = np.asarray(x)
+            return float(x.mean()) if x.size else 0.0
+
+        mask_dec = decision_arr > 0
+        macro_tp_dec = mean_or0(tp_arr[mask_dec] / decision_arr[mask_dec])
+        macro_fn_dec = mean_or0(fn_arr[mask_dec] / decision_arr[mask_dec])
+        macro_fp_dec = mean_or0(fp_arr[mask_dec] / decision_arr[mask_dec])
+        macro_tn_dec = mean_or0(tn_arr[mask_dec] / decision_arr[mask_dec])
+
+        mask_p = (tp_arr + fp_arr) > 0
+        mask_r = (tp_arr + fn_arr) > 0
+
+        prec_i = (tp_arr[mask_p] / (tp_arr[mask_p] + fp_arr[mask_p])).astype(float)
+        rec_i = (tp_arr[mask_r] / (tp_arr[mask_r] + fn_arr[mask_r])).astype(float)
+
+        idx_f1 = (tp_arr + fp_arr > 0) & (tp_arr + fn_arr > 0)
+        p_f1 = tp_arr[idx_f1] / (tp_arr[idx_f1] + fp_arr[idx_f1])
+        r_f1 = tp_arr[idx_f1] / (tp_arr[idx_f1] + fn_arr[idx_f1])
+        f1_i = np.where((p_f1 + r_f1) > 0, 2 * p_f1 * r_f1 / (p_f1 + r_f1), 0.0).astype(float)
+
+        macro_precision = mean_or0(prec_i)
+        macro_recall = mean_or0(rec_i)
+        macro_f1 = mean_or0(f1_i)
+
+        mask_all = sent_arr > 0
+        macro_tp_all = mean_or0(tp_arr[mask_all] / sent_arr[mask_all])
+        macro_fn_all = mean_or0(fn_arr[mask_all] / sent_arr[mask_all])
+        macro_fp_all = mean_or0(fp_arr[mask_all] / sent_arr[mask_all])
+        macro_tn_all = mean_or0(tn_arr[mask_all] / sent_arr[mask_all])
+        macro_decision_cov = mean_or0(decision_arr[mask_all] / sent_arr[mask_all])
+
+        print(
+            "[DEBUG][Confusion][Macro-Dec] "
+            f"TP%:{macro_tp_dec:.4f}, FN%:{macro_fn_dec:.4f}, FP%:{macro_fp_dec:.4f}, "
+            f"TN%:{macro_tn_dec:.4f}, Precision:{macro_precision:.4f}, Recall:{macro_recall:.4f}, F1:{macro_f1:.4f}"
+        )
+        print(
+            "[DEBUG][Confusion][Macro-All] "
+            f"TP%:{macro_tp_all:.4f}, FN%:{macro_fn_all:.4f}, FP%:{macro_fp_all:.4f}, "
+            f"TN%:{macro_tn_all:.4f}, Precision:{macro_precision:.4f}, Recall:{macro_recall:.4f}, "
+            f"F1:{macro_f1:.4f}, DecisionCoverage:{macro_decision_cov:.4f}"
         )
 
         return reward_tensor
