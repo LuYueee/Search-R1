@@ -3,11 +3,21 @@ import torch
 import random
 from datasets import load_dataset
 import requests
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 question = "Mike Barnett negotiated many contracts including which player that went on to become general manager of CSKA Moscow of the Kontinental Hockey League?"
 
 # Model ID and device setup
-model_id = "PeterJinGo/SearchR1-nq_hotpotqa_train-qwen2.5-7b-em-ppo"
+#model_id = "PeterJinGo/SearchR1-nq_hotpotqa_train-qwen2.5-7b-em-ppo"
+#model_id = "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/models/SearchR1-nq_hotpotqa_train-qwen2.5-7b-em-ppo"
+#model_id = "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq-search-r1-ppo-qwen2.5-3b-it-em/actor/global_step_400"
+#model_id ="/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq-search-r1-grpo-qwen2.5-3b-it-em/actor/global_step_500"
+#model_id ="/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq_search-r1-grpo-qwen2.5-3b-it-em-format-0711/actor/global_step_100"
+#model_id ="/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq_search-r1-grpo-qwen2.5-3b-it-em-format-retrieval/actor/global_step_100"
+model_id = "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq_search-r1-ppo-qwen2.5-3b-it-em-format-retrieval/actor/global_step_100"
+#model_id = "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq_search-r1-ppo-qwen2.5-3b-it-em-format/actor/global_step_600"
+#model_id ="/home/jovyan/work_vol90/RL+RAG/Search-R1-main/models/SearchR1-nq_hotpotqa_train-qwen2.5-14b-em-grpo-v0.3"
+# load the tokenizer and the model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 question = question.strip()
@@ -24,9 +34,13 @@ You can search as many times as your want. \
 If you find no further external knowledge needed, you can directly provide the answer inside <answer> and </answer>, without detailed illustrations. For example, <answer> Beijing </answer>. Question: {question}\n"""
 
 # Initialize the tokenizer and model
-tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
-model = transformers.AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16, device_map="auto")
-
+tokenizer = AutoTokenizer.from_pretrained(model_id, local_files_only=True)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    torch_dtype="auto",
+    device_map="auto", 
+    local_files_only=True
+)
 # Define the custom stopping criterion
 class StopOnSequence(transformers.StoppingCriteria):
     def __init__(self, target_sequences, tokenizer):
