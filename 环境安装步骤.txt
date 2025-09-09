@@ -67,11 +67,14 @@ pip install /home/jovyan/work_vol90/RL+RAG/faiss_gpu-1.7.3-cp310-cp310-manylinux
 ####执行完以上指令后，再执行新增指令：
 pip install -r requirements-retriever.txt
 pip uninstall torchaudio pytorch torchvision -y
+# 如果是 conda 装的
+conda remove -y torchvision
 
 # we recommend installing torch with conda for faiss-gpu
 pip install torchaudio==2.4.0 
 conda install pytorch==2.4.0=cuda120_py310h2c91c31_301 \
              torchvision==0.19.0=cuda120py310h8d5198f_0 \
              -c conda-forge
+
 
 
