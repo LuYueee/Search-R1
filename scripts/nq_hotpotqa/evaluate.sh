@@ -1,10 +1,7 @@
-data_name=nq_hotpotqa_train
-
+data_name=nq_search
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export DATA_DIR=data/${data_name} # first download the data from https://huggingface.co/datasets/PeterJinGo/nq_hotpotqa_train
-
-export BASE_MODEL=""
-
+export BASE_MODEL="/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/v0.4-nq_search-r1-ppo-qwen2.5-3b-it-em-format-retrieval-0911/actor/global_step_100"
 # set -x
 export VLLM_ATTENTION_BACKEND=XFORMERS # vllm + qwen2-7b with flash_attn has some issues
 
