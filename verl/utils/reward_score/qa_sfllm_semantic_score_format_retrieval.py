@@ -86,7 +86,7 @@ def f1_check(prediction, golden_answers):
     return best_f1
 
 
-def llm_semantic_check(prediction, golden_answers, model_path: str = "aiplat/qwen2.5-72b-instruct"):
+def llm_semantic_check(prediction, golden_answers, model_path: str = "aiplat/Qwen3-30B-A3B"):
     """
     Uses a locally loaded LLM to score the semantic similarity between
     a candidate prediction and the golden answer, returning a normalized
@@ -94,33 +94,95 @@ def llm_semantic_check(prediction, golden_answers, model_path: str = "aiplat/qwe
     """
     # Construct the evaluation prompt
     prompt = (
-        "# Role  \n"
-        "You are an objective evaluator comparing a candidate response to a golden answer.\n\n"
-        "# Instructions  \n"
-        "1. Rate on five dimensions (0–5 integers):  \n"
-        "   - **70%** Semantic Accuracy  \n"
-        "   - **7.5%** Completeness  \n"
-        "   - **7.5%** Logical Coherence  \n"
-        "   - **7.5%** Clarity  \n"
-        "   - **7.5%** Fluency  \n"
-        "2. Compute overall similarity (0–100):  \n"
-        "   overall = (0.70×SA + 0.075×(CMP+LC+CLR+FL)) × 20  \n"
-        "3. **Output only the overall score** No other fields or text or sql statements.\n\n"
-        "# Few-Shot  \n"
-        "Golden: Apple founded by Jobs/Wozniak (1976)  \n"
-        "Candidate: Jobs & Wozniak co‑founded Apple (1976), launching the PC era  \n"
-        "→ `100`  \n\n"
-        "Golden: Atmospheric layers: troposphere/stratosphere/mesosphere/thermosphere/exosphere  \n"
-        "Candidate: Atmosphere: troposphere & stratosphere  \n"
-        "→ `20`  \n\n"
-        "Golden: Deep learning stages: data preprocessing/model design/training/evaluation  \n"
-        "Candidate: DL workflow: data cleaning/network design/training/testing  \n"
-        "→ `100`  \n\n"
-        "Golden: EV benefits: zero emissions/high efficiency/low maintenance  \n"
-        "Candidate: EVs produce no pollutants but require charging networks  \n"
-        "→ `67`  \n\n"
-        "# Evaluation  \n"
+    "You are a strict semantic matching judge.\n"
+    "Judge ONLY semantic equivalence between a Candidate and a Golden reference.\n"
+    "Ignore style, wording, order, fluency, grammar, and formatting.\n"
+    "\n"
+    "# What to compare\n"
+    "- Decide whether Candidate and Golden express the SAME set of atomic propositions (facts/claims).\n"
+    "- Use bidirectional entailment:\n"
+    "  * Golden ⇒ Candidate (recall of Golden’s facts)\n"
+    "  * Candidate ⇒ Golden (penalize extra/new claims not supported by Golden)\n"
+    "- Treat paraphrases, synonyms, reordering, casing, and minor function words as equivalent.\n"
+    "- Numbers, dates, and named entities must match semantically (e.g., \"the capital of the UK\" ≡ \"the capital of the United Kingdom\").\n"
+    "- Do NOT reward surface word overlap without meaning match.\n"
+    "- If Candidate is empty and Golden is non-empty → score 0.\n"
+    "- If content is unrelated or contradicts Golden → score 0 (or very low).\n"
+    "\n"
+    "# Scoring = semantic equivalence first (wording/order/style irrelevant). Rules:\n"
+    "1) Unrelated or off-topic → 0.\n"
+    "2) Empty or whitespace candidate → 0.\n"
+    "3) Contradiction on key facts/entities/numbers → ≤25.\n"
+    "4) Missing key entity/attribute/time/number → 20–80 depending on severity.\n"
+    "5) Paraphrase / same meaning (including word order change, synonyms) → 95–100.\n"
+    "6) Minor wording differences only → 100.\n"
+    "7) Case and punctuation are ignored.\n"
+    "\n"
+    "# Primary semantic alignment (SA, 0–100)\n"
+    "1) Extract atomic propositions from Golden: N.\n"
+    "2) S = number of Golden propositions supported by Candidate (entailment or clear paraphrase).\n"
+    "3) C = number of Golden propositions contradicted by Candidate.\n"
+    "4) E = number of extra propositions asserted by Candidate not entailed by Golden.\n"
+    "5) Raw = (S - 0.5*C - 0.25*E) / max(N,1); clamp to [0,1].\n"
+    "6) SA = round(100 * Raw).\n"
+    "\n"
+    "# Secondary readability factors (10% cap)\n"
+    "Rate four dimensions ONLY if they materially affect understanding; otherwise set to 100.\n"
+    "- Completeness (CMP): coverage of Golden’s required facts.\n"
+    "- Logical Coherence (LC): internally consistent.\n"
+    "- Clarity (CLR): unambiguous phrasing.\n"
+    "- Fluency (FL): readable text.\n"
+    "Each in {0, 50, 100}; average them to get M (0–100).\n"
+    "\n"
+    "# Final score (0–100, integer)\n"
+    "Overall = round(0.90 * SA + 0.10 * M).\n"
+    "Return ONLY the integer Overall (0–100). No other text.\n"
+    "\n"
+    "# Few-shot sanity checks (return only the number):\n"
+    "Golden: Apple founded by Jobs/Wozniak (1976)\n"
+    "Candidate: Apple was founded by Jobs.\n"
+    "55\n"
+    "\n"
+    "Golden: Apple founded by Jobs/Wozniak (1976)\n"
+    "Candidate: Giant pandas live in Sichuan and eat bamboo.\n"
+    "0\n"
+    "\n"
+    "Golden: hello world\n"
+    "Candidate: Hello, world!\n"
+    "100\n"
+    "\n"
+    "Golden: the cat\n"
+    "Candidate:\n"
+    "0\n"
+    "\n"
+    "Golden: Apple founded by Jobs/Wozniak (1976)  \n"
+    "Candidate: Jobs & Wozniak co-founded Apple (1976), launching the PC era  \n"
+    "→ `100`  \n"
+    "\n"
+    "Golden: Atmospheric layers: troposphere/stratosphere/mesosphere/thermosphere/exosphere  \n"
+    "Candidate: Atmosphere: troposphere & stratosphere  \n"
+    "→ `20`  \n"
+    "\n"
+    "Golden: Deep learning stages: data preprocessing/model design/training/evaluation  \n"
+    "Candidate: DL workflow: data cleaning/network design/training/testing  \n"
+    "→ `100`  \n"
+    "\n"
+    "Golden: EV benefits: zero emissions/high efficiency/low maintenance  \n"
+    "Candidate: EVs produce no pollutants but require charging networks  \n"
+    "→ `67`  \n"
+    "\n"
+    "# Additional examples for missing facts\n"
+    "Golden: The law of universal gravity was proposed by Isaac Newton, and it describes the attraction between objects.\n"
+    "Candidate: Newton discovered the law of universal gravity.\n"
+    "50\n"
+    "\n"
+    "Golden: Under standard atmospheric pressure, the common phases of water are solid, liquid, and gas, with liquid being the most common.\n"
+    "Candidate: Water exists in liquid form at room temperature.\n"
+    "50\n"
+    "\n"
+    "# Evaluation\n"
     )
+        
     user_content = (
         f"Candidate: {prediction}\n"
         f"Golden: {golden_answers}"
@@ -136,6 +198,7 @@ def llm_semantic_check(prediction, golden_answers, model_path: str = "aiplat/qwe
         "Authorization": API_KEY,                         # === MODIFIED
         "Content-Type":  "application/json",
     }
+    '''
     payload = {
         "model":  model_path,                             # === MODIFIED: 使用公有模型名
         "messages": messages,
@@ -145,11 +208,21 @@ def llm_semantic_check(prediction, golden_answers, model_path: str = "aiplat/qwe
         "n":           1,     # 返回一个候选
         "stream":      False, # 关闭流式
     }
-
+    '''
+    payload = {
+        "model":  model_path,                             # === MODIFIED: 使用公有模型名
+        "messages": messages,
+        "max_tokens":  10,    # 最多生成 10 个 token
+        "temperature": 0.01,  # 几乎是贪心解码
+        "top_p":       1.0,   # 不做截断采样
+        "n":           1,     # 返回一个候选
+        "stream":      False, # 关闭流式
+        "chat_template_kwargs": {"enable_thinking":False} # === MODIFIED: 关闭思考模式
+    }
     # === MODIFIED: 发起请求
     try:
         resp = requests.post(url, headers=headers, json=payload, timeout=None)
-        time.sleep(0.53)
+        time.sleep(0.1)
         resp.raise_for_status()
         data = resp.json()
         # 从 choices[0].message.content 里提取数字
@@ -317,7 +390,7 @@ def compute_score_em(solution_str, ground_truth, model_path, structure_format_sc
         # structure_format_score = lambda_f ∈ [0,1]
         semantic_score = em_check(answer, ground_truth['target'])
         if not semantic_score:
-            llm_score = llm_semantic_check(answer, ground_truth['target'], "aiplat/qwen2.5-72b-instruct")
+            llm_score = llm_semantic_check(answer, ground_truth['target'], "aiplat/Qwen3-30B-A3B")
             f1_score = f1_check(answer, ground_truth['target'])
             semantic_score = max(f1_score, llm_score)
 
