@@ -1,0 +1,3230 @@
+D[DEBUG] Batch reward stats - mean: 1.1828, min: -0.3000, max: 5.0000!`
+D[DEBUG] Batch reward stats - mean: 1.0844, min: -0.4000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.1969, min: -0.1000, max: 5.0000Z
+D[DEBUG] Batch reward stats - mean: 1.3047, min: -0.2000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.3586, min: -0.1000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.2191, min: -0.2000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.2570, min: -0.6000, max: 4.90003
+D[DEBUG] Batch reward stats - mean: 1.1492, min: -0.5000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.2734, min: -0.2000, max: 5.0000t%
+D[DEBUG] Batch reward stats - mean: 1.1465, min: -0.5000, max: 5.0000M
+D[DEBUG] Batch reward stats - mean: 1.2129, min: -0.2000, max: 5.0000J
+D[DEBUG] Batch reward stats - mean: 1.1082, min: -0.2000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.1082, min: -0.5000, max: 4.9000/,4
+D[DEBUG] Batch reward stats - mean: 1.1891, min: -0.5000, max: 5.0000I4\
+4"Initial validation metrics: {'val/test_score/nq': "
+1(@)
+epoch 0, step 1
+D[DEBUG] Batch reward stats - mean: 1.2156, min: -0.7000, max: 5.0000
+val/test_score/nq
+1.19935827937817
+val/test_score/nq
+1.19935827937817
+epoch 0, step 2
+D[DEBUG] Batch reward stats - mean: 1.2369, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+1.004296875
+env/number_of_valid_search
+1.004296875
+epoch 0, step 3>
+D[DEBUG] Batch reward stats - mean: 1.2356, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+	0.9734375
+env/number_of_valid_search
+	0.9734375
+epoch 0, step 4b5
+D[DEBUG] Batch reward stats - mean: 1.1215, min: -0.5000, max: 5.0000(
+env/number_of_valid_search
+1.00546875
+env/number_of_valid_search
+1.00546875
+epoch 0, step 5
+D[DEBUG] Batch reward stats - mean: 1.2459, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.980078125
+env/number_of_valid_search
+0.980078125
+epoch 0, step 6"
+D[DEBUG] Batch reward stats - mean: 1.1666, min: -0.6000, max: 5.0000w
+env/number_of_valid_search
+1.007421875
+env/number_of_valid_search
+1.007421875
+epoch 0, step 7
+D[DEBUG] Batch reward stats - mean: 1.2118, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.960546875
+env/number_of_valid_search
+0.960546875
+epoch 0, step 80QN
+D[DEBUG] Batch reward stats - mean: 1.2677, min: -0.5000, max: 5.0000>
+env/number_of_valid_search
+0.976171875
+env/number_of_valid_search
+0.976171875
+epoch 0, step 9
+D[DEBUG] Batch reward stats - mean: 1.2927, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.98984375
+env/number_of_valid_search
+0.98984375
+epoch 0, step 10d
+D[DEBUG] Batch reward stats - mean: 1.2274, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.983984375
+env/number_of_valid_search
+0.983984375
+epoch 0, step 11
+D[DEBUG] Batch reward stats - mean: 1.3085, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+1.01015625
+env/number_of_valid_search
+1.01015625
+epoch 0, step 122?
+D[DEBUG] Batch reward stats - mean: 1.2039, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.978125
+env/number_of_valid_search
+0.978125
+epoch 0, step 13
+D[DEBUG] Batch reward stats - mean: 1.2172, min: -0.6000, max: 5.0000 
+env/number_of_valid_search
+0.98125
+env/number_of_valid_search
+0.98125
+epoch 0, step 14+
+D[DEBUG] Batch reward stats - mean: 1.2295, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.98046875
+env/number_of_valid_search
+0.98046875
+epoch 0, step 15
+D[DEBUG] Batch reward stats - mean: 1.3118, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.983984375
+env/number_of_valid_search
+0.983984375
+epoch 0, step 162`
+D[DEBUG] Batch reward stats - mean: 1.4217, min: -0.4000, max: 5.0000
+env/number_of_valid_search
+0.967578125
+env/number_of_valid_search
+0.967578125
+epoch 0, step 17
+D[DEBUG] Batch reward stats - mean: 1.4166, min: -0.4000, max: 5.0000
+env/number_of_valid_search
+0.997265625
+env/number_of_valid_search
+0.997265625
+epoch 0, step 18
+D[DEBUG] Batch reward stats - mean: 1.3573, min: -0.4000, max: 5.0000
+env/number_of_valid_search
+	0.9796875
+env/number_of_valid_search
+	0.9796875
+epoch 0, step 19
+D[DEBUG] Batch reward stats - mean: 1.4117, min: -0.4000, max: 5.0000
+env/number_of_valid_search
+1.004296875
+env/number_of_valid_search
+1.004296875
+epoch 0, step 20
+D[DEBUG] Batch reward stats - mean: 1.3977, min: -0.5000, max: 5.0000
+env/number_of_valid_search
+0.978515625
+env/number_of_valid_search
+0.978515625
+epoch 0, step 21Y
+D[DEBUG] Batch reward stats - mean: 1.4264, min: -0.5000, max: 5.0000X
+env/number_of_valid_search
+0.966015625
+env/number_of_valid_search
+0.966015625
+epoch 0, step 22S
+D[DEBUG] Batch reward stats - mean: 1.4413, min: -0.8000, max: 5.0000
+env/number_of_valid_search
+0.992578125
+env/number_of_valid_search
+0.992578125
+epoch 0, step 23
+D[DEBUG] Batch reward stats - mean: 1.5684, min: -0.4000, max: 5.0000
+env/number_of_valid_search
+0.99375
+env/number_of_valid_search
+0.99375
+epoch 0, step 24A
+D[DEBUG] Batch reward stats - mean: 1.6205, min: -0.6000, max: 5.0000t
+env/number_of_valid_search
+0.98515625
+env/number_of_valid_search
+0.98515625
+epoch 0, step 258
+D[DEBUG] Batch reward stats - mean: 1.6523, min: -0.5000, max: 5.0000
+env/number_of_valid_search
+0.987109375
+env/number_of_valid_search
+0.987109375
+epoch 0, step 26	
+D[DEBUG] Batch reward stats - mean: 1.8073, min: -0.4000, max: 5.0000jr
+env/number_of_valid_search
+1.009765625
+env/number_of_valid_search
+1.009765625
+epoch 0, step 27
+D[DEBUG] Batch reward stats - mean: 1.7730, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+1.00703125
+env/number_of_valid_search
+1.00703125
+epoch 0, step 28
+D[DEBUG] Batch reward stats - mean: 1.8685, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+1.019140625
+env/number_of_valid_search
+1.019140625
+epoch 0, step 29nu
+D[DEBUG] Batch reward stats - mean: 1.9827, min: -0.4000, max: 5.0000A
+env/number_of_valid_search
+1.00234375
+env/number_of_valid_search
+1.00234375
+epoch 0, step 30Iq2
+D[DEBUG] Batch reward stats - mean: 1.8840, min: -0.3000, max: 5.0000-
+env/number_of_valid_search
+1.022265625
+env/number_of_valid_search
+1.022265625
+epoch 0, step 315
+D[DEBUG] Batch reward stats - mean: 2.0599, min: -0.5000, max: 5.0000A]w
+env/number_of_valid_search
+0.978125
+env/number_of_valid_search
+0.978125
+epoch 0, step 32
+D[DEBUG] Batch reward stats - mean: 2.2489, min: -0.4000, max: 5.0000R-y
+env/number_of_valid_search
+0.960546875
+env/number_of_valid_search
+0.960546875
+epoch 0, step 33
+D[DEBUG] Batch reward stats - mean: 1.9814, min: -0.4000, max: 5.0000
+env/number_of_valid_search
+0.943359375
+env/number_of_valid_search
+0.943359375
+epoch 0, step 34
+D[DEBUG] Batch reward stats - mean: 1.9314, min: -0.3000, max: 5.0000p
+env/number_of_valid_search
+0.919921875
+env/number_of_valid_search
+0.919921875
+epoch 0, step 35
+D[DEBUG] Batch reward stats - mean: 1.9696, min: -0.6000, max: 5.0000
+env/number_of_valid_search
+0.907421875
+env/number_of_valid_search
+0.907421875
+epoch 0, step 36G7
+D[DEBUG] Batch reward stats - mean: 1.9436, min: -0.5000, max: 5.0000
+env/number_of_valid_search
+0.85078125
+env/number_of_valid_search
+0.85078125
+epoch 0, step 37A
+D[DEBUG] Batch reward stats - mean: 1.9733, min: -0.2000, max: 5.00009U3$/
+env/number_of_valid_search
+0.833203125
+env/number_of_valid_search
+0.833203125
+epoch 0, step 38
+D[DEBUG] Batch reward stats - mean: 2.0136, min: -0.4000, max: 5.0000v
+env/number_of_valid_search
+0.812890625
+env/number_of_valid_search
+0.812890625
+epoch 0, step 392
+D[DEBUG] Batch reward stats - mean: 2.0335, min: -0.4000, max: 5.0000p"
+env/number_of_valid_search
+0.762890625
+env/number_of_valid_search
+0.762890625
+epoch 0, step 40 
+D[DEBUG] Batch reward stats - mean: 1.9151, min: -0.4000, max: 5.0000=8
+env/number_of_valid_search
+0.74609375
+env/number_of_valid_search
+0.74609375
+epoch 0, step 41
+D[DEBUG] Batch reward stats - mean: 1.9841, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.701953125
+env/number_of_valid_search
+0.701953125
+epoch 0, step 42
+D[DEBUG] Batch reward stats - mean: 1.9582, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+0.64921875
+env/number_of_valid_search
+0.64921875
+epoch 0, step 43
+D[DEBUG] Batch reward stats - mean: 2.0518, min: -0.0000, max: 5.0000
+env/number_of_valid_search
+	0.6546875
+env/number_of_valid_search
+	0.6546875
+epoch 0, step 44
+D[DEBUG] Batch reward stats - mean: 1.8571, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+0.61015625
+env/number_of_valid_search
+0.61015625
+epoch 0, step 45
+D[DEBUG] Batch reward stats - mean: 1.8485, min: -0.2000, max: 5.0000eM
+env/number_of_valid_search
+0.559765625
+env/number_of_valid_search
+0.559765625
+epoch 0, step 46
+D[DEBUG] Batch reward stats - mean: 1.9503, min: -0.6000, max: 5.0000e
+env/number_of_valid_search
+0.48203125
+env/number_of_valid_search
+0.48203125
+epoch 0, step 47
+D[DEBUG] Batch reward stats - mean: 1.8198, min: -0.4000, max: 5.0000
+env/number_of_valid_search
+0.500390625
+env/number_of_valid_search
+0.500390625
+epoch 0, step 48
+D[DEBUG] Batch reward stats - mean: 1.7646, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+0.433984375
+env/number_of_valid_search
+0.433984375
+epoch 0, step 49Sf@
+D[DEBUG] Batch reward stats - mean: 1.7919, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+	0.4015625
+env/number_of_valid_search
+	0.4015625
+epoch 0, step 50
+D[DEBUG] Batch reward stats - mean: 1.6633, min: -0.0000, max: 5.0000 
+C[DEBUG] Batch reward stats - mean: 1.5461, min: 0.4000, max: 5.0000v
+C[DEBUG] Batch reward stats - mean: 1.6363, min: 0.1000, max: 5.0000oZ
+C[DEBUG] Batch reward stats - mean: 1.8824, min: 0.4000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.6891, min: 0.3000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.8578, min: 0.2000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.7527, min: -0.1000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.7520, min: 0.1000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.7664, min: 0.3000, max: 5.0000
+D[DEBUG] Batch reward stats - mean: 1.7707, min: -0.2000, max: 5.0000@
+C[DEBUG] Batch reward stats - mean: 1.7336, min: 0.4000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.6918, min: 0.4000, max: 5.0000/<T
+C[DEBUG] Batch reward stats - mean: 1.7094, min: 0.1000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.8320, min: 0.3000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.8180, min: 0.4000, max: 5.0000	
+env/number_of_valid_search
+0.341015625
+env/number_of_valid_search
+0.341015625
+epoch 0, step 51
+D[DEBUG] Batch reward stats - mean: 1.6921, min: -0.0000, max: 5.0000-]
+env/number_of_valid_search
+0.31640625
+val/test_score/nq
+1.7455915230966639
+env/number_of_valid_search
+0.31640625
+val/test_score/nq
+1.7455915230966639
+epoch 0, step 52
+D[DEBUG] Batch reward stats - mean: 1.6957, min: -0.0000, max: 5.0000?#
+env/number_of_valid_search
+0.298046875
+env/number_of_valid_search
+0.298046875
+epoch 0, step 53
+D[DEBUG] Batch reward stats - mean: 1.6918, min: -0.2000, max: 5.0000U
+env/number_of_valid_search
+0.30078125
+env/number_of_valid_search
+0.30078125
+epoch 0, step 54
+D[DEBUG] Batch reward stats - mean: 1.6470, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.27265625
+env/number_of_valid_search
+0.27265625
+epoch 0, step 55c
+C[DEBUG] Batch reward stats - mean: 1.6710, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+0.1875
+env/number_of_valid_search
+0.1875
+epoch 0, step 56
+D[DEBUG] Batch reward stats - mean: 1.6254, min: -0.2000, max: 5.0000O
+env/number_of_valid_search
+0.13359375
+env/number_of_valid_search
+0.13359375
+epoch 0, step 57
+C[DEBUG] Batch reward stats - mean: 1.6296, min: 0.0000, max: 5.0000
+env/number_of_valid_search
+	0.1515625
+env/number_of_valid_search
+	0.1515625
+epoch 0, step 58
+C[DEBUG] Batch reward stats - mean: 1.5375, min: 0.0000, max: 5.0000
+env/number_of_valid_search
+0.074609375
+env/number_of_valid_search
+0.074609375
+epoch 0, step 59
+D[DEBUG] Batch reward stats - mean: 1.4610, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.063671875
+env/number_of_valid_search
+0.063671875
+epoch 0, step 60r
+C[DEBUG] Batch reward stats - mean: 1.5321, min: 0.2000, max: 5.0000tI
+env/number_of_valid_search
+0.058984375
+env/number_of_valid_search
+0.058984375
+epoch 0, step 61~5
+C[DEBUG] Batch reward stats - mean: 1.5080, min: 0.2000, max: 5.0000
+env/number_of_valid_search
+0.032421875
+env/number_of_valid_search
+0.032421875
+epoch 0, step 62
+C[DEBUG] Batch reward stats - mean: 1.5098, min: 0.0000, max: 5.0000
+env/number_of_valid_search
+0.019921875
+env/number_of_valid_search
+0.019921875
+epoch 0, step 63
+C[DEBUG] Batch reward stats - mean: 1.5592, min: 0.3000, max: 5.0000Oa
+env/number_of_valid_search
+0.014453125
+env/number_of_valid_search
+0.014453125
+epoch 0, step 64
+C[DEBUG] Batch reward stats - mean: 1.5112, min: 0.3000, max: 5.0000#8
+env/number_of_valid_search
+0.008203125
+env/number_of_valid_search
+0.008203125
+epoch 0, step 65
+C[DEBUG] Batch reward stats - mean: 1.5323, min: 0.4000, max: 5.0000
+env/number_of_valid_search
+0.008984375
+env/number_of_valid_search
+0.008984375
+epoch 0, step 66sw
+C[DEBUG] Batch reward stats - mean: 1.5687, min: 0.1000, max: 5.0000Ld
+env/number_of_valid_search
+0.007421875
+env/number_of_valid_search
+0.007421875
+epoch 0, step 67
+C[DEBUG] Batch reward stats - mean: 1.4953, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+0.006640625
+env/number_of_valid_search
+0.006640625
+epoch 0, step 68C
+C[DEBUG] Batch reward stats - mean: 1.4979, min: 0.3000, max: 5.00000
+env/number_of_valid_search
+0.008203125
+env/number_of_valid_search
+0.008203125
+epoch 0, step 69"!`
+D[DEBUG] Batch reward stats - mean: 1.5303, min: -0.0000, max: 5.0000!
+env/number_of_valid_search
+0.007421875
+env/number_of_valid_search
+0.007421875
+epoch 0, step 70
+C[DEBUG] Batch reward stats - mean: 1.5747, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+0.005859375
+env/number_of_valid_search
+0.005859375
+epoch 0, step 715r
+C[DEBUG] Batch reward stats - mean: 1.5701, min: 0.1000, max: 5.0000TT8
+env/number_of_valid_search
+0.00234375
+env/number_of_valid_search
+0.00234375
+epoch 0, step 72
+C[DEBUG] Batch reward stats - mean: 1.5337, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+0.00234375
+env/number_of_valid_search
+0.00234375
+epoch 0, step 73"
+C[DEBUG] Batch reward stats - mean: 1.5501, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+	0.0015625
+env/number_of_valid_search
+	0.0015625
+epoch 0, step 74
+C[DEBUG] Batch reward stats - mean: 1.5132, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 75D
+D[DEBUG] Batch reward stats - mean: 1.4702, min: -0.1000, max: 5.0000j$m
+env/number_of_valid_search
+0.004296875
+env/number_of_valid_search
+0.004296875
+epoch 0, step 762w
+C[DEBUG] Batch reward stats - mean: 1.5169, min: 0.4000, max: 5.0000}
+env/number_of_valid_search
+0.002734375
+env/number_of_valid_search
+0.002734375
+epoch 0, step 77
+C[DEBUG] Batch reward stats - mean: 1.4995, min: 0.1000, max: 5.0000_
+env/number_of_valid_search
+0.001171875
+env/number_of_valid_search
+0.001171875
+epoch 0, step 78
+C[DEBUG] Batch reward stats - mean: 1.5597, min: 0.1000, max: 5.0000
+env/number_of_valid_search
+0.003125
+env/number_of_valid_search
+0.003125
+epoch 0, step 79
+C[DEBUG] Batch reward stats - mean: 1.5407, min: 0.2000, max: 5.0000S
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 80B
+C[DEBUG] Batch reward stats - mean: 1.5525, min: 0.3000, max: 5.0000t
+env/number_of_valid_search
+0.002734375
+env/number_of_valid_search
+0.002734375
+epoch 0, step 81
+C[DEBUG] Batch reward stats - mean: 1.4803, min: 0.1000, max: 5.0000
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 82I)
+C[DEBUG] Batch reward stats - mean: 1.5436, min: 0.2000, max: 5.0000c
+env/number_of_valid_search
+0.002734375
+env/number_of_valid_search
+0.002734375
+epoch 0, step 83
+C[DEBUG] Batch reward stats - mean: 1.5290, min: 0.4000, max: 5.00004
+env/number_of_valid_search
+0.001171875
+env/number_of_valid_search
+0.001171875
+epoch 0, step 84
+C[DEBUG] Batch reward stats - mean: 1.4888, min: 0.2000, max: 5.0000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 0, step 85
+C[DEBUG] Batch reward stats - mean: 1.5791, min: 0.2000, max: 5.0000
+env/number_of_valid_search
+0.001171875
+env/number_of_valid_search
+0.001171875
+epoch 0, step 862}=
+C[DEBUG] Batch reward stats - mean: 1.5950, min: 0.1000, max: 5.0000
+env/number_of_valid_search
+0.001171875
+env/number_of_valid_search
+0.001171875
+epoch 0, step 87hQ
+C[DEBUG] Batch reward stats - mean: 1.5910, min: 0.4000, max: 5.0000
+env/number_of_valid_search
+	0.0015625
+env/number_of_valid_search
+	0.0015625
+epoch 0, step 88
+C[DEBUG] Batch reward stats - mean: 1.5325, min: 0.1000, max: 5.0000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 0, step 89
+C[DEBUG] Batch reward stats - mean: 1.4752, min: 0.5000, max: 5.0000[n
+env/number_of_valid_search
+	0.0015625
+env/number_of_valid_search
+	0.0015625
+epoch 0, step 90
+C[DEBUG] Batch reward stats - mean: 1.5255, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 0, step 91_
+C[DEBUG] Batch reward stats - mean: 1.4758, min: 0.1000, max: 5.0000
+env/number_of_valid_search
+0.001171875
+env/number_of_valid_search
+0.001171875
+epoch 0, step 92
+C[DEBUG] Batch reward stats - mean: 1.4909, min: 0.4000, max: 5.0000
+env/number_of_valid_search
+0.00234375
+env/number_of_valid_search
+0.00234375
+epoch 0, step 93
+C[DEBUG] Batch reward stats - mean: 1.5458, min: 0.2000, max: 5.0000)v
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 0, step 94U
+C[DEBUG] Batch reward stats - mean: 1.5917, min: 0.2000, max: 5.0000
+env/number_of_valid_search
+0.000390625
+env/number_of_valid_search
+0.000390625
+epoch 0, step 95
+C[DEBUG] Batch reward stats - mean: 1.4927, min: 0.3000, max: 5.0000
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 96PY"
+C[DEBUG] Batch reward stats - mean: 1.5951, min: 0.2000, max: 5.0000W
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 97
+C[DEBUG] Batch reward stats - mean: 1.5412, min: 0.4000, max: 5.0000{
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 98
+C[DEBUG] Batch reward stats - mean: 1.5962, min: 0.4000, max: 5.0000c~
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 0, step 99@ICc/
+C[DEBUG] Batch reward stats - mean: 1.5407, min: 0.3000, max: 5.0000j
+env/number_of_valid_search
+actor/kl_coef
+env/number_of_valid_search
+actor/kl_coef
+epoch 0, step 100
+C[DEBUG] Batch reward stats - mean: 1.5194, min: 0.1000, max: 5.0000F&
+C[DEBUG] Batch reward stats - mean: 1.5117, min: 0.5000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.6383, min: 0.4000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.6367, min: 0.5000, max: 5.0000&
+C[DEBUG] Batch reward stats - mean: 1.4668, min: 0.5000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.6539, min: 0.4000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.5754, min: 0.3000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.6152, min: 0.1000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.5125, min: 0.2000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.4801, min: 0.4000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.8242, min: 1.0000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.5137, min: 0.5000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.5605, min: 0.5000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.5000, min: 1.0000, max: 5.0000
+C[DEBUG] Batch reward stats - mean: 1.6367, min: 1.0000, max: 5.0000 3
+env/number_of_valid_search
+0.000390625
+env/number_of_valid_search
+0.000390625
+epoch 0, step 101
+C[DEBUG] Batch reward stats - mean: 1.5956, min: 0.3000, max: 5.0000{z
+env/number_of_valid_search
+0.00078125
+val/test_score/nq
+1.5804129464397971
+val/test_score/nq
+1.5804129464397971
+env/number_of_valid_search
+0.00078125
+epoch 0, step 102
+C[DEBUG] Batch reward stats - mean: 1.6133, min: 0.2000, max: 5.0000
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 103
+C[DEBUG] Batch reward stats - mean: 1.6277, min: 0.0000, max: 5.0000
+env/number_of_valid_search
+0.00078125
+env/number_of_valid_search
+0.00078125
+epoch 0, step 104
+C[DEBUG] Batch reward stats - mean: 1.5048, min: 0.2000, max: 5.0000
+env/number_of_valid_search
+0.000390625
+env/number_of_valid_search
+0.000390625
+epoch 0, step 105
+C[DEBUG] Batch reward stats - mean: 1.5532, min: 0.1000, max: 5.0000a=@
+env/number_of_valid_search
+0.000390625
+env/number_of_valid_search
+0.000390625
+epoch 0, step 106
+C[DEBUG] Batch reward stats - mean: 1.6989, min: 0.4000, max: 5.0000
+env/number_of_valid_search
+0.000390625
+env/number_of_valid_search
+0.000390625
+epoch 0, step 107
+D[DEBUG] Batch reward stats - mean: 1.5179, min: -0.2000, max: 5.0000P
+env/number_of_valid_search
+	0.0015625
+env/number_of_valid_search
+	0.0015625
+epoch 0, step 1085
+C[DEBUG] Batch reward stats - mean: 1.5290, min: 0.0000, max: 5.0000v
+env/number_of_valid_search
+0.007421875
+env/number_of_valid_search
+0.007421875
+epoch 0, step 109`
+D[DEBUG] Batch reward stats - mean: 1.5575, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.003125
+env/number_of_valid_search
+0.003125
+epoch 0, step 110
+C[DEBUG] Batch reward stats - mean: 1.5162, min: 0.0000, max: 5.0000
+env/number_of_valid_search
+0.005859375
+env/number_of_valid_search
+0.005859375
+epoch 0, step 111fT6
+D[DEBUG] Batch reward stats - mean: 1.5278, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.00625
+env/number_of_valid_search
+0.00625
+epoch 0, step 112
+D[DEBUG] Batch reward stats - mean: 1.4532, min: -0.1000, max: 5.0000y
+env/number_of_valid_search
+0.006640625
+env/number_of_valid_search
+0.006640625
+epoch 0, step 113M
+D[DEBUG] Batch reward stats - mean: 1.3988, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.018359375
+env/number_of_valid_search
+0.018359375
+epoch 0, step 114_
+C[DEBUG] Batch reward stats - mean: 1.3669, min: 0.1000, max: 5.0000-
+env/number_of_valid_search
+0.011328125
+env/number_of_valid_search
+0.011328125
+epoch 0, step 115
+D[DEBUG] Batch reward stats - mean: 1.4571, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.006640625
+env/number_of_valid_search
+0.006640625
+epoch 0, step 116
+D[DEBUG] Batch reward stats - mean: 1.3556, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.009375
+env/number_of_valid_search
+0.009375
+epoch 0, step 117/
+D[DEBUG] Batch reward stats - mean: 1.2702, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+	0.0109375
+env/number_of_valid_search
+	0.0109375
+epoch 0, step 118
+D[DEBUG] Batch reward stats - mean: 1.3284, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+0.021875
+env/number_of_valid_search
+0.021875
+epoch 0, step 119P
+D[DEBUG] Batch reward stats - mean: 1.1584, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+0.023828125
+env/number_of_valid_search
+0.023828125
+epoch 0, step 120z
+D[DEBUG] Batch reward stats - mean: 1.0381, min: -0.2000, max: 5.0000
+env/number_of_valid_search
+0.045703125
+env/number_of_valid_search
+0.045703125
+epoch 0, step 121
+D[DEBUG] Batch reward stats - mean: 0.9279, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.062109375
+env/number_of_valid_search
+0.062109375
+epoch 0, step 122
+D[DEBUG] Batch reward stats - mean: 1.0195, min: -0.1000, max: 5.00005
+env/number_of_valid_search
+0.071875
+env/number_of_valid_search
+0.071875
+epoch 0, step 123d-
+D[DEBUG] Batch reward stats - mean: 0.7467, min: -0.1000, max: 5.0000|
+env/number_of_valid_search
+0.096875
+env/number_of_valid_search
+0.096875
+epoch 0, step 124
+D[DEBUG] Batch reward stats - mean: 0.7694, min: -0.1000, max: 5.0000<"$
+env/number_of_valid_search
+0.118359375
+env/number_of_valid_search
+0.118359375
+epoch 0, step 125
+D[DEBUG] Batch reward stats - mean: 0.8821, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.089453125
+env/number_of_valid_search
+0.089453125
+epoch 0, step 126
+D[DEBUG] Batch reward stats - mean: 0.7834, min: -0.1000, max: 5.0000X5u
+env/number_of_valid_search
+	0.0578125
+env/number_of_valid_search
+	0.0578125
+epoch 0, step 127
+D[DEBUG] Batch reward stats - mean: 0.8851, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.056640625
+env/number_of_valid_search
+0.056640625
+epoch 0, step 128
+C[DEBUG] Batch reward stats - mean: 0.8162, min: 0.0000, max: 5.0000
+env/number_of_valid_search
+0.033203125
+env/number_of_valid_search
+0.033203125
+epoch 0, step 129
+D[DEBUG] Batch reward stats - mean: 0.8716, min: -0.1000, max: 4.0000
+env/number_of_valid_search
+0.022265625
+env/number_of_valid_search
+0.022265625
+epoch 0, step 130
+D[DEBUG] Batch reward stats - mean: 0.9082, min: -0.1000, max: 4.0000
+env/number_of_valid_search
+	0.0109375
+env/number_of_valid_search
+	0.0109375
+epoch 0, step 131
+D[DEBUG] Batch reward stats - mean: 0.9360, min: -0.1000, max: 5.0000~d
+env/number_of_valid_search
+0.0125
+env/number_of_valid_search
+0.0125
+epoch 0, step 132L+
+D[DEBUG] Batch reward stats - mean: 0.8734, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.00625
+env/number_of_valid_search
+0.00625
+epoch 0, step 133
+C[DEBUG] Batch reward stats - mean: 0.8968, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+	0.0046875
+env/number_of_valid_search
+	0.0046875
+epoch 0, step 134
+C[DEBUG] Batch reward stats - mean: 0.8859, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+	0.0046875
+env/number_of_valid_search
+	0.0046875
+epoch 0, step 135
+C[DEBUG] Batch reward stats - mean: 0.9566, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.003515625
+env/number_of_valid_search
+0.003515625
+epoch 0, step 136
+D[DEBUG] Batch reward stats - mean: 0.9334, min: -0.1000, max: 5.0000
+env/number_of_valid_search
+0.00390625
+env/number_of_valid_search
+0.00390625
+epoch 0, step 137
+C[DEBUG] Batch reward stats - mean: 0.9845, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+	0.0015625
+env/number_of_valid_search
+	0.0015625
+epoch 0, step 138
+C[DEBUG] Batch reward stats - mean: 0.9121, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.00234375
+env/number_of_valid_search
+0.00234375
+epoch 0, step 139;
+C[DEBUG] Batch reward stats - mean: 0.8763, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+	0.0046875
+env/number_of_valid_search
+	0.0046875
+epoch 0, step 140
+D[DEBUG] Batch reward stats - mean: 0.8905, min: -0.1000, max: 4.0000
+env/number_of_valid_search
+0.00703125
+env/number_of_valid_search
+0.00703125
+epoch 0, step 141
+D[DEBUG] Batch reward stats - mean: 0.8610, min: -0.1000, max: 4.0000**~
+env/number_of_valid_search
+0.009375
+env/number_of_valid_search
+0.009375
+epoch 0, step 142
+D[DEBUG] Batch reward stats - mean: 0.8187, min: -0.1000, max: 4.0000
+env/number_of_valid_search
+0.014453125
+env/number_of_valid_search
+0.014453125
+epoch 0, step 143fl%r/
+C[DEBUG] Batch reward stats - mean: 0.8497, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.012109375
+env/number_of_valid_search
+0.012109375
+epoch 0, step 144J
+D[DEBUG] Batch reward stats - mean: 0.7707, min: -0.1000, max: 4.0000
+env/number_of_valid_search
+0.006640625
+env/number_of_valid_search
+0.006640625
+epoch 0, step 145%
+D[DEBUG] Batch reward stats - mean: 0.6759, min: -0.1000, max: 4.0000
+env/number_of_valid_search
+0.012890625
+env/number_of_valid_search
+0.012890625
+epoch 0, step 1465
+D[DEBUG] Batch reward stats - mean: 0.5023, min: -0.1000, max: 4.0000e)
+env/number_of_valid_search
+0.008984375
+env/number_of_valid_search
+0.008984375
+epoch 0, step 147
+C[DEBUG] Batch reward stats - mean: 0.3624, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.006640625
+env/number_of_valid_search
+0.006640625
+epoch 0, step 148
+C[DEBUG] Batch reward stats - mean: 0.3908, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+	0.0078125
+env/number_of_valid_search
+	0.0078125
+epoch 0, step 149
+C[DEBUG] Batch reward stats - mean: 0.4689, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.007421875
+env/number_of_valid_search
+0.007421875
+epoch 0, step 150&
+C[DEBUG] Batch reward stats - mean: 0.5308, min: 0.0000, max: 4.0000l
+C[DEBUG] Batch reward stats - mean: 0.5117, min: 0.0000, max: 4.0000$
+C[DEBUG] Batch reward stats - mean: 0.6105, min: 0.0000, max: 4.0000l
+C[DEBUG] Batch reward stats - mean: 0.4754, min: 0.0000, max: 4.00006
+C[DEBUG] Batch reward stats - mean: 0.4609, min: 0.1000, max: 4.0000~~Wp/
+C[DEBUG] Batch reward stats - mean: 0.5160, min: 0.1000, max: 4.0000
+C[DEBUG] Batch reward stats - mean: 0.5187, min: 0.1000, max: 4.0000
+C[DEBUG] Batch reward stats - mean: 0.5617, min: 0.1000, max: 4.0000
+C[DEBUG] Batch reward stats - mean: 0.4895, min: 0.1000, max: 4.0000
+C[DEBUG] Batch reward stats - mean: 0.4363, min: 0.1000, max: 4.0000
+C[DEBUG] Batch reward stats - mean: 0.5535, min: 0.1000, max: 4.0000\
+C[DEBUG] Batch reward stats - mean: 0.5898, min: 0.1000, max: 4.0000
+C[DEBUG] Batch reward stats - mean: 0.5031, min: 0.1000, max: 4.0000
+C[DEBUG] Batch reward stats - mean: 0.5207, min: 0.1000, max: 4.0000x
+C[DEBUG] Batch reward stats - mean: 0.4297, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+0.005078125
+env/number_of_valid_search
+0.005078125
+epoch 0, step 151Se
+C[DEBUG] Batch reward stats - mean: 0.5125, min: 0.0000, max: 4.0000E&
+env/number_of_valid_search
+	0.0078125
+val/test_score/nq
+0.5126953131091015
+env/number_of_valid_search
+	0.0078125
+val/test_score/nq
+0.5126953131091015
+epoch 0, step 152
+C[DEBUG] Batch reward stats - mean: 0.5302, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.003125
+env/number_of_valid_search
+0.003125
+epoch 0, step 153
+C[DEBUG] Batch reward stats - mean: 0.4941, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.003125
+env/number_of_valid_search
+0.003125
+epoch 0, step 154
+C[DEBUG] Batch reward stats - mean: 0.4527, min: 0.0000, max: 4.0000
+env/number_of_valid_search
+0.004296875^
+env/number_of_valid_search
+0.004296875
+epoch 1, step 155
+D[DEBUG] Batch reward stats - mean: 0.3493, min: -0.1000, max: 4.0000
+env/number_of_valid_search
+0.001953125
+env/number_of_valid_search
+0.001953125
+epoch 1, step 156
+C[DEBUG] Batch reward stats - mean: 0.2116, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+0.001953125
+env/number_of_valid_search
+0.001953125
+epoch 1, step 157
+D[DEBUG] Batch reward stats - mean: 0.1729, min: -0.3000, max: 4.0000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 158q%
+C[DEBUG] Batch reward stats - mean: 0.1775, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+0.000390625
+env/number_of_valid_search
+0.000390625
+epoch 1, step 159#I
+C[DEBUG] Batch reward stats - mean: 0.1497, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 160
+C[DEBUG] Batch reward stats - mean: 0.1604, min: 0.1000, max: 4.0000%]
+env/number_of_valid_search
+0.000390625
+env/number_of_valid_search
+0.000390625
+epoch 1, step 161
+C[DEBUG] Batch reward stats - mean: 0.1502, min: 0.1000, max: 4.0000|
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 1627
+C[DEBUG] Batch reward stats - mean: 0.1391, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 1, step 163o=
+C[DEBUG] Batch reward stats - mean: 0.1190, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 164
+C[DEBUG] Batch reward stats - mean: 0.1078, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 165-
+C[DEBUG] Batch reward stats - mean: 0.1159, min: 0.1000, max: 4.0000]GI
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 166
+C[DEBUG] Batch reward stats - mean: 0.1127, min: 0.1000, max: 4.0000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 167;
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000S
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 168
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000AE `.
+env/number_of_valid_search
+actor/kl_loss
+env/number_of_valid_search
+actor/kl_loss
+epoch 1, step 169
+C[DEBUG] Batch reward stats - mean: 0.1068, min: 0.1000, max: 3.6000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 170
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/balanced_max
+env/number_of_valid_search
+global_seqlen/balanced_max
+epoch 1, step 171T
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/mean
+env/number_of_valid_search
+global_seqlen/mean
+epoch 1, step 172
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 173
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 174i
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000\C\
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 175
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 176
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+global_seqlen/minmax_diff
+epoch 1, step 177
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+global_seqlen/minmax_diff
+epoch 1, step 178
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+1(@)
+epoch 1, step 179
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 180E
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/pg_clipfrac
+env/number_of_valid_search
+actor/pg_clipfrac
+epoch 1, step 181
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 182L
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 183w
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000po5"/
+env/number_of_valid_search
+actor/kl_coef
+env/number_of_valid_search
+actor/kl_coef
+epoch 1, step 184@
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000,
+env/number_of_valid_search
+_runtime
+env/number_of_valid_search
+_runtime
+epoch 1, step 185
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+global_seqlen/minmax_diff
+epoch 1, step 186
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000t
+env/number_of_valid_search
+actor/ppo_kl
+env/number_of_valid_search
+actor/ppo_kl
+epoch 1, step 187
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+	gpu.0.gpu
+epoch 1, step 188
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 189j
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 190
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 191
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 192
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000"
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 1, step 193
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 194
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 195}
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10007
+env/number_of_valid_search
+global_seqlen/balanced_min
+env/number_of_valid_search
+global_seqlen/balanced_min
+epoch 1, step 196l
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 1, step 197
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 198
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 199l
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+state_tokens/total
+env/number_of_valid_search
+state_tokens/total
+epoch 1, step 200y_
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000U
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000=
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000}
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000>
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000E
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 201A
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+critic/advantages/max
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+critic/advantages/max
+epoch 1, step 202%
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/grad_norm
+env/number_of_valid_search
+actor/grad_norm
+epoch 1, step 203
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/pg_loss
+env/number_of_valid_search
+actor/pg_loss
+epoch 1, step 204t
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 205UV
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000k
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+global_seqlen/minmax_diff
+epoch 1, step 206
+C[DEBUG] Batch reward stats - mean: 0.1068, min: 0.1000, max: 3.60008
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 207)Eql/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000E
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 208
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/ppo_kl
+env/number_of_valid_search
+actor/ppo_kl
+epoch 1, step 209
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000m
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 210
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000*
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 211A
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 212
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000w
+env/number_of_valid_search
+response_length/max
+env/number_of_valid_search
+response_length/max
+epoch 1, step 213
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 214
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10002
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 215
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 216
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 217J>
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000JG
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 218z
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000_
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 1, step 219A
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 220&
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+state_tokens/coverage
+env/number_of_valid_search
+state_tokens/coverage
+epoch 1, step 221
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 222DT
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 223
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+env/number_of_actions/min
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 224<X2
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 225
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 226
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 227
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000`
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 228
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000%0
+env/number_of_valid_search
+global_seqlen/mean
+env/number_of_valid_search
+global_seqlen/mean
+epoch 1, step 229
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000l
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+1(@)
+epoch 1, step 230
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 231
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000q
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 1, step 232
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000C6
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 1, step 233q+
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000N
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 234
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000#
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 235
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 236
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000[
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 237
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 238
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 1, step 239
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 240
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000P
+env/number_of_valid_search
+global_seqlen/balanced_min
+env/number_of_valid_search
+global_seqlen/balanced_min
+epoch 1, step 241H
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 242
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 243
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 244
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 245O
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Jh
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 246SqV
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000g
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 247
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 1, step 248J^Pb.
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 1, step 249
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000'
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 250
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000eagg/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000P
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000]
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000"	
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 251p
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+val/test_score/nq
+0.10000000149011612
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 252<7
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 1, step 253
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000C?g
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 254
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_runtime
+env/number_of_valid_search
+_runtime
+epoch 1, step 255R
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 256*I
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 257
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+state_tokens/coverage
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 258
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000	d
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 259E
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 260
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10004;'
+env/number_of_valid_search
+critic/advantages/min
+env/number_of_valid_search
+critic/advantages/min
+epoch 1, step 261V
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000X
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 1, step 262
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 263
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000t
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 1, step 264N
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000v/BZ/
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 1, step 265
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000I
+env/number_of_valid_search
+_runtime
+env/number_of_valid_search
+_runtime
+epoch 1, step 266
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/score/max
+env/number_of_valid_search
+critic/score/max
+epoch 1, step 267N
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 268%d
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000$`
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 269n
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+state_tokens/coverage
+env/number_of_valid_search
+state_tokens/coverage
+epoch 1, step 270
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 271
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 272P.
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/kl_coef
+env/number_of_valid_search
+actor/kl_coef
+epoch 1, step 273
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10005
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 1, step 274
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 275
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 276
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 1, step 277A50K.
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000pO
+env/number_of_valid_search
+global_seqlen/mean
+env/number_of_valid_search
+global_seqlen/mean
+epoch 1, step 278v
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/balanced_min
+env/number_of_valid_search
+global_seqlen/balanced_min
+epoch 1, step 279&
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000uS
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 280
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000R
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 281#
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 1, step 282
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 283
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Yv
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 1, step 284
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 1, step 285
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 1, step 286
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/kl_coef
+env/number_of_valid_search
+actor/kl_coef
+epoch 1, step 287
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 1, step 288
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 289
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/pg_clipfrac
+env/number_of_valid_search
+actor/pg_clipfrac
+epoch 1, step 290g
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 1, step 291U$
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 1, step 292
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000j
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 1, step 293
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 294uU
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/max
+env/number_of_valid_search
+global_seqlen/max
+epoch 1, step 295K
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 1, step 296
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 1, step 297
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 298mq
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 299|
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000~
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 1, step 300
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000+M
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000e
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10007H
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000-p
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+1(@)
+epoch 1, step 301.
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/rewards/mean
+val/test_score/nq
+0.10000000149011612
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+critic/rewards/mean
+epoch 1, step 302
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 1, step 303^
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 304
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000,^
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 1, step 305
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+state_tokens/total
+env/number_of_valid_search
+state_tokens/total
+epoch 1, step 306
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 1, step 307k
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 1, step 308
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 309
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 310
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10009|O
+env/number_of_valid_search
+response_length/mean
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 311
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 312b
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000#QM
+env/number_of_valid_search
+actor/kl_coef
+env/number_of_valid_search
+actor/kl_coef
+epoch 2, step 313>|Re/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000aO
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 314n'*,/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 315
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 316
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/balanced_max
+env/number_of_valid_search
+global_seqlen/balanced_max
+epoch 2, step 317
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000?`qX/
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 2, step 318
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 2, step 319+
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 320
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000F
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 2, step 321O
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/pg_loss
+env/number_of_valid_search
+actor/pg_loss
+epoch 2, step 322
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 323
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000e
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 324P
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 325
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000_
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 326
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000q
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 327
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 328O9
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 329S/h
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 2, step 330
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 331!
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000/
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 332
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/mean
+env/number_of_valid_search
+global_seqlen/mean
+epoch 2, step 333
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 334(
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 335!)
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 336
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/rewards/max
+env/number_of_valid_search
+critic/rewards/max
+epoch 2, step 337`>z=/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 2, step 338
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 339
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000{rp'/
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 340
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 2, step 341IS
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000.3
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 342
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+	mfu/actor
+env/number_of_valid_search
+	mfu/actor
+epoch 2, step 343I$.
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 344J
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+response_length/clip_ratio
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 345l,$#/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000UN
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 346
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 347
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 348
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 2, step 3492
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 350
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000i
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000f
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000+{
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000P
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000'DH
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000.
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000D
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 351
+C[DEBUG] Batch reward stats - mean: 0.1068, min: 0.1000, max: 3.6000
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+timing_s/save_checkpoint
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+timing_s/save_checkpoint
+epoch 2, step 352
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 353{
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000}
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 354E
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000H
+env/number_of_valid_search
+response_length/mean
+env/number_of_valid_search
+actor/pg_clipfrac
+epoch 2, step 355
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000+
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 356
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 357
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 3588
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000,^I
+env/number_of_valid_search
+global_seqlen/balanced_max
+env/number_of_valid_search
+global_seqlen/balanced_max
+epoch 2, step 359
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000K
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 360
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 361
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 2, step 362&
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/lr
+env/number_of_valid_search
+actor/lr
+epoch 2, step 363&
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000n
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 3644
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000#
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 365,!
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000"&<W/
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 366
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000IV4i.
+env/number_of_valid_search
+actor/lr
+env/number_of_valid_search
+actor/lr
+epoch 2, step 3679
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/advantages/min
+env/number_of_valid_search
+critic/advantages/min
+epoch 2, step 368X|
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+global_seqlen/minmax_diff
+epoch 2, step 369
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 370
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 371
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 372
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 373<
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000g
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 374
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 2, step 375
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000"
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 376.
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000s
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 377
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Mb
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 378s
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 379
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 2, step 380
+C[DEBUG] Batch reward stats - mean: 0.1068, min: 0.1000, max: 3.6000(
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 381[
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_runtime
+env/number_of_valid_search
+_runtime
+epoch 2, step 382
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 383e*
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 384r
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 385
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 386h
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10001
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 387
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 388
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10006
+env/number_of_valid_search
+timing_per_token_ms/adv
+env/number_of_valid_search
+timing_per_token_ms/adv
+epoch 2, step 389
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10008
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 390
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 391p
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 392
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 393
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 394:
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 395d
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 396
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000-
+env/number_of_valid_search
+_step
+epoch 2, step 397
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 3983
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 399
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 400
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10009
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000N
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000)GG
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000%3
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000!~
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Tc
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000(
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/score/mean
+env/number_of_valid_search
+critic/score/mean
+epoch 2, step 401
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+timing_s/step
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 4022
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 403
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000`
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 404
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000gN
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 405
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/rewards/max
+env/number_of_valid_search
+1(@)
+epoch 2, step 406
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000E
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 407
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000(
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 2, step 408u5
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 409
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000A
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 410q
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 411'f]
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000J}
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 412
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 413
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 2, step 414
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 415(IC
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000h
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 416
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000w
+env/number_of_valid_search
+_runtime
+env/number_of_valid_search
+_runtime
+epoch 2, step 417cPN
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000cOw
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 418
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000b
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 419
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 420
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 421
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 422#
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 423
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000n!
+env/number_of_valid_search
+critic/rewards/min
+env/number_of_valid_search
+critic/rewards/min
+epoch 2, step 424V
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 425
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 2, step 426
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000.
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 427
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000[
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 428
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/score/mean
+env/number_of_valid_search
+critic/score/mean
+epoch 2, step 429?
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 2, step 430
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+global_seqlen/minmax_diff
+epoch 2, step 431
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 432
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000^k
+env/number_of_valid_search
+state_tokens/coverage
+env/number_of_valid_search
+state_tokens/coverage
+epoch 2, step 433
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000MC
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 434vQ
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 435
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 436
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 2, step 437
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/pg_loss
+env/number_of_valid_search
+actor/pg_loss
+epoch 2, step 438
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000B!
+env/number_of_valid_search
+global_seqlen/balanced_max
+env/number_of_valid_search
+global_seqlen/balanced_max
+epoch 2, step 439{
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 4407
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000M
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 2, step 441e
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 442W
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+state_tokens/total
+env/number_of_valid_search
+state_tokens/total
+epoch 2, step 443
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 2, step 444r
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Y
+env/number_of_valid_search
+global_seqlen/balanced_max
+env/number_of_valid_search
+global_seqlen/balanced_max
+epoch 2, step 445
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000i
+env/number_of_valid_search
+global_seqlen/balanced_min
+env/number_of_valid_search
+global_seqlen/balanced_min
+epoch 2, step 4465I<
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000x
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 447
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 2, step 448
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 449Ln 
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_timestamp
+env/number_of_valid_search
+_timestamp
+epoch 2, step 4504Z
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000ps
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000B
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Q"
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000l
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10003
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000[
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Dw
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 451
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10004"
+env/number_of_valid_search
+global_seqlen/max
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+global_seqlen/max
+val/test_score/nq
+0.10000000149011612
+epoch 2, step 452
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 2, step 453T/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000	
+env/number_of_valid_search
+global_seqlen/balanced_min
+env/number_of_valid_search
+global_seqlen/balanced_min
+epoch 2, step 454
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/kl_coef
+env/number_of_valid_search
+actor/kl_coef
+epoch 2, step 455
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 2, step 456
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/ref
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 2, step 457
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10003{
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 458
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+critic/returns/min
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 459
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+env/number_of_valid_search
+ timing_per_token_ms/update_actor
+epoch 2, step 460
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+global_seqlen/minmax_diff
+epoch 2, step 461
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 2, step 462
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000:8
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 3, step 463
+C[DEBUG] Batch reward stats - mean: 0.1068, min: 0.1000, max: 3.6000
+env/number_of_valid_search
+global_seqlen/balanced_min
+env/number_of_valid_search
+global_seqlen/balanced_min
+epoch 3, step 464T
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 3, step 465
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 3, step 466
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/grad_norm
+env/number_of_valid_search
+actor/grad_norm
+epoch 3, step 467
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 3, step 468
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/minmax_diff
+env/number_of_valid_search
+timing_s/update_actor
+epoch 3, step 469
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 3, step 470E
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000,
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 3, step 471g)
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 3, step 472T
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 3, step 4731
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/mean
+env/number_of_valid_search
+global_seqlen/mean
+epoch 3, step 4748
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 3, step 475L
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_runtime
+env/number_of_valid_search
+_runtime
+epoch 3, step 476
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+env/number_of_actions/mean
+env/number_of_valid_search
+timing_s/gen
+epoch 3, step 477
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+actor/pg_clipfrac
+env/number_of_valid_search
+actor/pg_clipfrac
+epoch 3, step 478y+r
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000&
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 3, step 479
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000pa
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 3, step 480M
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 3, step 481
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000{
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 3, step 482
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Mz]
+env/number_of_valid_search
+timing_s/step
+env/number_of_valid_search
+timing_s/step
+epoch 3, step 483#
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 3, step 484/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 3, step 485
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000>
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 3, step 486
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10008J
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 3, step 487
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 3, step 488
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 3, step 489sD
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000[	
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 3, step 490
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/adv
+env/number_of_valid_search
+timing_s/adv
+epoch 3, step 491
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 3, step 492
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000y
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 3, step 493
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+state_tokens/total
+env/number_of_valid_search
+state_tokens/total
+epoch 3, step 494>pd8/
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 3, step 495Z
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 3, step 496
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/update_actor
+env/number_of_valid_search
+timing_s/update_actor
+epoch 3, step 497
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+epoch 3, step 498
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+_step
+env/number_of_valid_search
+_step
+epoch 3, step 499
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000V
+env/number_of_valid_search
+state_tokens/total
+env/number_of_valid_search
+state_tokens/total
+epoch 3, step 500-
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000UE
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000 
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000(.j
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000P
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000u
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000@e
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+env/number_of_valid_search
+timing_s/gen
+env/number_of_valid_search
+timing_s/gen
+epoch 3, step 501
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000w
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+timing_per_token_ms/ref
+val/test_score/nq
+0.10000000149011612
+env/number_of_valid_search
+timing_per_token_ms/ref
+epoch 3, step 502
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000P.BM/
+env/number_of_valid_search
+timing_per_token_ms/gen
+env/number_of_valid_search
+timing_per_token_ms/gen
+epoch 3, step 503$
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000CG
+env/number_of_valid_search
+global_seqlen/min
+env/number_of_valid_search
+global_seqlen/min
+epoch 3, step 504
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.10005
+env/number_of_valid_search
+timing_s/ref
+env/number_of_valid_search
+timing_s/ref
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000QT
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000Y
+C[DEBUG] Batch reward stats - mean: 0.1000, min: 0.1000, max: 0.1000
