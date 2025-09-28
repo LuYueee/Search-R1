@@ -394,17 +394,18 @@ def compute_score_em(solution_str, ground_truth, model_path, structure_format_sc
             f1_score = f1_check(answer, ground_truth['target'])
             semantic_score = max(f1_score, llm_score)
 
-        # 统一公式实现：
+        # 统一公式实现（加入 final_format_score 兜底项）：
         final_em_format_score = (
             semantic_score
             + structure_format_score * (
                 is_valid_format * (1 - semantic_score)
                 - (1 - is_valid_format) * semantic_score
             )
+            + (1 - semantic_score) * (1 - is_valid_format) * final_format_score  # ← 新增final_format_score这一项
         )
         # 为了防止数值漂移，可再做一次裁剪，确保 0 ≤ score ≤ 1
         final_em_format_score = max(0.0, min(1.0, final_em_format_score))
-    
+        
     # Rewards for redundant retrieval
     response_str = solution_str[solution_str.find('<|im_start|>assistant') + 21:] if '<|im_start|>assistant' in solution_str else solution_str
     n_search = count_search_tags(response_str)
