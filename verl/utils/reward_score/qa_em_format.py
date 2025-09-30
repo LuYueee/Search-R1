@@ -165,7 +165,8 @@ def compute_score_em(solution_str, ground_truth, method='strict', structure_form
     retrieval_correct = False
     if is_valid_format:
         retrieval_correct = is_retrieval_correct(solution_str, ground_truth['target'])
-    answer = extract_solution(solution_str=solution_str)
+    response_str = solution_str[solution_str.find('<|im_start|>assistant') + 21:] if '<|im_start|>assistant' in solution_str else solution_str
+    answer = extract_solution(response_str)
     do_print = random.randint(1, 64) == 1
     
     if do_print:
