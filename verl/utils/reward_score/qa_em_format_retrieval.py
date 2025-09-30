@@ -161,8 +161,8 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
         score: the score for the correct answer
     """
     is_valid_format, _ = is_valid_sequence(solution_str)
-
-    answer = extract_solution(solution_str=solution_str)
+    response_str = solution_str[solution_str.find('<|im_start|>assistant') + 21:] if '<|im_start|>assistant' in solution_str else solution_str
+    answer = extract_solution(response_str)
 
     do_print = random.randint(1, 64) == 1
 
@@ -191,7 +191,6 @@ def compute_score_em(solution_str, ground_truth, structure_format_score=0, final
             final_em_format_score = final_format_score
     
     # Rewards for redundant retrieval
-    response_str = solution_str[solution_str.find('<|im_start|>assistant') + 21:] if '<|im_start|>assistant' in solution_str else solution_str
     n_search = count_search_tags(response_str)
     n_repeat = count_repeat_information(response_str)  
     # Apply penalties and calculate final reward
