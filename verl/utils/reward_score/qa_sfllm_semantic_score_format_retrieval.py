@@ -25,6 +25,8 @@ LLM_API_URL = "http://llm-model-hub-apis.sf-express.com"  # http://llm-model-hub
 API_KEY = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NLZXkiOiJhcGkyX2VkMjM2YWI4LTJhZDMtNDE2Yy05ZTMyLWU4OWJjZGVjYjYyNyIsImVudiI6InByZCIsImp0aSI6MjA4NDIsInByb2plY3RfaWQiOjQ2Niwic3lzdGVtS2V5IjoiYTVmMDI4NjItMmRjYS00YzJmLTk3MDktZjdmMThhYjMzMzNlIn0.tpkfC0aaxiiVklYT6tXq-OxbKxnyN4y-IW8NtSdCYAU"  # === MODIFIED: 填上申请到的 token
 
 def normalize_answer(s):
+    if s is None:
+        return ""
     def remove_articles(text):
         return re.sub(r"\b(a|an|the)\b", " ", text)
 
@@ -36,12 +38,16 @@ def normalize_answer(s):
         return "".join(ch for ch in text if ch not in exclude)
 
     def lower(text):
+        if text is None:
+            return ""
         return text.lower()
 
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
 def em_check(prediction, golden_answers):
+    if prediction is None:
+        return 0
     if isinstance(golden_answers, str):
         golden_answers = [golden_answers]
     normalized_prediction = normalize_answer(prediction)
@@ -416,7 +422,8 @@ def compute_score_em(solution_str, ground_truth, model_path, structure_format_sc
     #final_score = max(0, lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat)
     
     if do_print:
-        print(f"EM Score: {em_check(answer, ground_truth['target'])}")
+        em = em_check(answer, ground_truth['target']) if answer else 0
+        print(f"EM Score: {em}")
         print(f"LLM Semantic Score: {llm_score}")
         print(f"F-1 Score: {f1_score}")
         print(f"Format Valid: {is_valid_format}")
