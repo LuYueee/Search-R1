@@ -25,6 +25,8 @@ LLM_API_URL = "http://llm-model-hub-apis.sf-express.com"  # http://llm-model-hub
 API_KEY = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NLZXkiOiJhcGkyX2VkMjM2YWI4LTJhZDMtNDE2Yy05ZTMyLWU4OWJjZGVjYjYyNyIsImVudiI6InByZCIsImp0aSI6MjA4NDIsInByb2plY3RfaWQiOjQ2Niwic3lzdGVtS2V5IjoiYTVmMDI4NjItMmRjYS00YzJmLTk3MDktZjdmMThhYjMzMzNlIn0.tpkfC0aaxiiVklYT6tXq-OxbKxnyN4y-IW8NtSdCYAU"  # === MODIFIED: 填上申请到的 token
 
 def normalize_answer(s):
+    if s is None:
+        return ""
     def remove_articles(text):
         return re.sub(r"\b(a|an|the)\b", " ", text)
 

@@ -17,6 +17,8 @@ import string
 import random
 
 def normalize_answer(s):
+    if s is None:
+        return ""
     def remove_articles(text):
         return re.sub(r"\b(a|an|the)\b", " ", text)
 
