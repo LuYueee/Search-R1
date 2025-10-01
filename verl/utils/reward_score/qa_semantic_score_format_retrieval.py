@@ -22,6 +22,8 @@ from collections import Counter
 LLM_API_URL = "http://127.0.0.1:8001/v1/completions"  # MODIFIED
 
 def normalize_answer(s):
+    if s is None:
+        return ""
     def remove_articles(text):
         return re.sub(r"\b(a|an|the)\b", " ", text)
 
