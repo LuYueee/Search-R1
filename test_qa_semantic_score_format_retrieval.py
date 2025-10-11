@@ -22,6 +22,8 @@ from collections import Counter
 LLM_API_URL = "http://127.0.0.1:8001/v1/completions"  # MODIFIED
 
 def normalize_answer(s):
+    if s is None:
+        return ""
     def remove_articles(text):
         return re.sub(r"\b(a|an|the)\b", " ", text)
 
@@ -33,12 +35,16 @@ def normalize_answer(s):
         return "".join(ch for ch in text if ch not in exclude)
 
     def lower(text):
+        if text is None:
+            return ""
         return text.lower()
 
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
 def em_check(prediction, golden_answers):
+    if prediction is None:
+        return 0
     if isinstance(golden_answers, str):
         golden_answers = [golden_answers]
     normalized_prediction = normalize_answer(prediction)
@@ -277,7 +283,8 @@ def compute_score_em(solution_str, ground_truth, model_path, structure_format_sc
     """
     is_valid_format, _ = is_valid_sequence(solution_str)
 
-    answer = extract_solution(solution_str=solution_str)
+    response_str = solution_str[solution_str.find('<|im_start|>assistant') + 21:] if '<|im_start|>assistant' in solution_str else solution_str
+    answer = extract_solution(response_str)
 
     ###################
     do_print = random.randint(1, 64) == 1
@@ -307,25 +314,29 @@ def compute_score_em(solution_str, ground_truth, model_path, structure_format_sc
             f1_score = f1_check(answer, ground_truth['target'])
             semantic_score = max(f1_score, llm_score)
 
-        # 统一公式实现：
+        # 统一公式实现（加入 final_format_score 兜底项）：
         final_em_format_score = (
             semantic_score
             + structure_format_score * (
                 is_valid_format * (1 - semantic_score)
                 - (1 - is_valid_format) * semantic_score
             )
+            + (1 - semantic_score) * (1 - is_valid_format) * final_format_score  # ← 新增final_format_score这一项
         )
         # 为了防止数值漂移，可再做一次裁剪，确保 0 ≤ score ≤ 1
         final_em_format_score = max(0.0, min(1.0, final_em_format_score))
     
     # Rewards for redundant retrieval
-    n_search = count_search_tags(solution_str)
-    n_repeat = count_repeat_information(solution_str)  
+    n_search = count_search_tags(response_str)
+    n_repeat = count_repeat_information(response_str)  
+
     # Apply penalties and calculate final reward
-    final_score = max(0, lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat)
+    #final_score = max(0, lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat)
+    final_score = lambda_task * final_em_format_score - lambda_search_num * n_search - lambda_repeat_search_num * n_repeat
     
     if do_print:
-        print(f"EM Score: {em_check(answer, ground_truth['target'])}")
+        em = em_check(answer, ground_truth['target']) if answer else 0
+        print(f"EM Score: {em}")
         print(f"LLM Semantic Score: {llm_score}")
         print(f"F-1 Score: {f1_score}")
         print(f"Format Valid: {is_valid_format}")
