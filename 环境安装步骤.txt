@@ -31,6 +31,7 @@ pip3 install nvidia-cublas-cu12==12.3.4.1
 
 ###第二阶段RL新增
 pip install spacy
+pip install scipy==1.13.1
 conda install -c conda-forge spacy-model-en_core_web_sm
 
 
@@ -175,3 +176,4 @@ python -m pip uninstall -y pydantic-extra-types
 #    - 全部使用 --no-deps，防止 pip 拉起“更新链”把别的包又升回去
 
 python -m pip install --no-deps --force-reinstall llvmlite==0.44.0
+
