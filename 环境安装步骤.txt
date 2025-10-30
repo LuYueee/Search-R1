@@ -83,6 +83,107 @@ conda install pytorch==2.4.0=cuda120_py310h2c91c31_301 \
 
 
 ###Search-R1
+# === 0) 卸载第二环境中多余的包 ===
+python -m pip uninstall -y annotated-doc pydantic-extra-types pyvers
+
+# === 1) 低层/编译相关优先（避免后面装高层包时被升级） ===
+python -m pip install --no-deps --force-reinstall pybind11==2.13.6
+python -m pip install --no-deps --force-reinstall orjson==3.10.18
+python -m pip install --no-deps --force-reinstall msgpack==1.1.1
+python -m pip install --no-deps --force-reinstall rpds-py==0.26.0
+python -m pip install --no-deps --force-reinstall regex==2024.11.6
+
+# === 2) 网络/事件循环 & 其依赖（aiohttp/uvloop/httptools 栈） ===
+python -m pip install --no-deps --force-reinstall attrs==25.3.0
+python -m pip install --no-deps --force-reinstall anyio==4.9.0
+python -m pip install --no-deps --force-reinstall yarl==1.20.1
+python -m pip install --no-deps --force-reinstall multidict==6.6.3
+python -m pip install --no-deps --force-reinstall frozenlist==1.7.0
+python -m pip install --no-deps --force-reinstall aiohttp==3.12.13
+python -m pip install --no-deps --force-reinstall uvloop==0.21.0
+python -m pip install --no-deps --force-reinstall httptools==0.6.4
+python -m pip install --no-deps --force-reinstall requests==2.32.4
+python -m pip install --no-deps --force-reinstall certifi==2025.6.15
+python -m pip install --no-deps --force-reinstall charset-normalizer==3.4.2
+python -m pip install --no-deps --force-reinstall wcwidth==0.2.13
+python -m pip install --no-deps --force-reinstall platformdirs==4.3.8
+python -m pip install --no-deps --force-reinstall filelock==3.18.0
+python -m pip install --no-deps --force-reinstall psutil==7.0.0
+python -m pip install --no-deps --force-reinstall prometheus_client==0.22.1
+python -m pip install --no-deps --force-reinstall watchfiles==1.1.0
+python -m pip install --no-deps --force-reinstall uvicorn==0.35.0
+
+# === 3) Web 框架版本闭环（FastAPI/Starlette/typer） ===
+python -m pip install --no-deps --force-reinstall starlette==0.46.2
+python -m pip install --no-deps --force-reinstall fastapi==0.116.0
+python -m pip install --no-deps --force-reinstall typer==0.16.0
+python -m pip install --no-deps --force-reinstall typer-slim==0.16.0
+
+# === 4) Jupyter/交互相关 ===
+python -m pip install --no-deps --force-reinstall parso==0.8.4
+python -m pip install --no-deps --force-reinstall prompt_toolkit==3.0.51
+python -m pip install --no-deps --force-reinstall pyzmq==27.0.0
+python -m pip install --no-deps --force-reinstall matplotlib-inline==0.1.7
+
+# === 5) HF 生态（严格按旧版本落地，避免 datasets 拉升） ===
+python -m pip install --no-deps --force-reinstall tokenizers==0.21.2
+python -m pip install --no-deps --force-reinstall safetensors==0.5.3
+python -m pip install --no-deps --force-reinstall huggingface-hub==0.33.2
+python -m pip install --no-deps --force-reinstall datasets==3.6.0
+python -m pip install --no-deps --force-reinstall fsspec==2025.3.0
+python -m pip install --no-deps --force-reinstall pyarrow==20.0.0
+python -m pip install --no-deps --force-reinstall pandas==2.3.1
+python -m pip install --no-deps --force-reinstall xxhash==3.5.0
+python -m pip install --no-deps --force-reinstall sentencepiece==0.2.0
+python -m pip install --no-deps --force-reinstall tiktoken==0.9.0
+
+# === 6) OpenAI SDK 及其相关 ===
+python -m pip install --no-deps --force-reinstall openai==1.93.1
+python -m pip install --no-deps --force-reinstall jiter==0.10.0
+python -m pip install --no-deps --force-reinstall PyYAML==6.0.2
+python -m pip install --no-deps --force-reinstall jsonschema==4.24.0
+python -m pip install --no-deps --force-reinstall jsonschema-specifications==2025.4.1
+python -m pip install --no-deps --force-reinstall python-dotenv==1.1.1
+python -m pip install --no-deps --force-reinstall propcache==0.3.2
+
+# === 7) 训练/分布式/日志 ===
+python -m pip install --no-deps --force-reinstall accelerate==1.8.1
+python -m pip install --no-deps --force-reinstall ray==2.47.1
+python -m pip install --no-deps --force-reinstall wandb==0.21.0
+python -m pip install --no-deps --force-reinstall sentry-sdk==2.32.0
+python -m pip install --no-deps --force-reinstall nvidia-ml-py==12.575.51
+
+# === 8) 其它精确差异项 ===
+python -m pip install --no-deps --force-reinstall GitPython==3.1.44
+python -m pip install --no-deps --force-reinstall datasets==3.6.0      # 再次确保未被升级
+python -m pip install --no-deps --force-reinstall lark==1.2.2
+python -m pip install --no-deps --force-reinstall mistral_common==1.6.3
+python -m pip install --no-deps --force-reinstall msgpack==1.1.1       # 再确保
+python -m pip install --no-deps --force-reinstall pyairports==2.1.1
+python -m pip install --no-deps --force-reinstall pyparsing==3.2.3
+python -m pip install --no-deps --force-reinstall protobuf==6.31.1
+python -m pip install --no-deps --force-reinstall openai==1.93.1       # 防被动升回
+python -m pip install --no-deps --force-reinstall pandas==2.3.1         # 防被动升回
+
+# === 9) flash-attn（注意：需与当前 CUDA/PyTorch 匹配；用的就是老版本） ===
+python -m pip install --no-deps --force-reinstall flash_attn==2.8.0.post2
+
+# === 10) 可选：将 pip 自身也对齐到 25.1.1（最后做，避免中途降级安装器）
+python -m pip install --upgrade --no-deps pip==25.1.1
+
+# === 11) 校验 ===
+python -m pip check
+python -m pip show \
+  GitPython PyYAML accelerate aiohttp anyio attrs certifi charset-normalizer datasets dill \
+  executing fastapi filelock flash_attn fonttools frozenlist fsspec hf-xet httptools \
+  huggingface-hub jiter jsonschema jsonschema-specifications lark matplotlib-inline \
+  mistral_common msgpack multidict nvidia-ml-py openai orjson pandas parso pip platformdirs \
+  prometheus_client prompt_toolkit propcache protobuf psutil pyairports pyarrow pybind11 \
+  pyparsing python-dotenv pyzmq ray regex requests rpds-py safetensors sentencepiece \
+  sentry-sdk starlette tiktoken tokenizers typer typer-slim uvicorn uvloop wandb watchfiles \
+  wcwidth wrapt xxhash yarl | sed -n '1,5p'
+
+###Search-R1-bak
 # 1) 将 pip 版本对齐到 FIRST（先做它，避免解析器差异）
 python -m pip install --upgrade "pip==25.1.1"
 
@@ -176,4 +277,5 @@ python -m pip uninstall -y pydantic-extra-types
 #    - 全部使用 --no-deps，防止 pip 拉起“更新链”把别的包又升回去
 
 python -m pip install --no-deps --force-reinstall llvmlite==0.44.0
+
 
