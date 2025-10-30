@@ -78,3 +78,100 @@ conda install pytorch==2.4.0=cuda120_py310h2c91c31_301 \
 
 
 
+
+
+
+###Search-R1
+# 1) 将 pip 版本对齐到 FIRST（先做它，避免解析器差异）
+python -m pip install --upgrade "pip==25.1.1"
+
+# 2) 卸载 SECOND 中多余、FIRST 里没有的包
+python -m pip uninstall -y annotated-doc pydantic-extra-types pyvers
+
+# 3) 一次性精确安装/降级/升级到 FIRST 的版本（含补齐缺失的 scipy）
+#    让解析器一次性求解，减少反复“打架”
+python -m pip install --upgrade --no-cache-dir \
+  "GitPython==3.1.44" \
+  "PyYAML==6.0.2" \
+  "accelerate==1.8.1" \
+  "aiohttp==3.12.13" \
+  "anyio==4.9.0" \
+  "attrs==25.3.0" \
+  "certifi==2025.6.15" \
+  "charset-normalizer==3.4.2" \
+  "datasets==3.6.0" \
+  "dill==0.3.8" \
+  "executing==2.2.0" \
+  "fastapi==0.116.0" \
+  "filelock==3.18.0" \
+  "flash_attn==2.8.0.post2" \
+  "fonttools==4.58.5" \
+  "frozenlist==1.7.0" \
+  "fsspec==2025.3.0" \
+  "hf-xet==1.1.5" \
+  "httptools==0.6.4" \
+  "huggingface-hub==0.33.2" \
+  "jiter==0.10.0" \
+  "jsonschema==4.24.0" \
+  "jsonschema-specifications==2025.4.1" \
+  "lark==1.2.2" \
+  "matplotlib-inline==0.1.7" \
+  "mistral_common==1.6.3" \
+  "msgpack==1.1.1" \
+  "multidict==6.6.3" \
+  "numpy==2.0.2" \
+  "nvidia-ml-py==12.575.51" \
+  "openai==1.93.1" \
+  "orjson==3.10.18" \
+  "pandas==2.3.1" \
+  "parso==0.8.4" \
+  "platformdirs==4.3.8" \
+  "preshed==3.0.10" \
+  "prometheus_client==0.22.1" \
+  "prompt_toolkit==3.0.51" \
+  "propcache==0.3.2" \
+  "protobuf==6.31.1" \
+  "psutil==7.0.0" \
+  "pyarrow==20.0.0" \
+  "pybind11==2.13.6" \
+  "pyparsing==3.2.3" \
+  "python-dotenv==1.1.1" \
+  "pyzmq==27.0.0" \
+  "ray==2.47.1" \
+  "regex==2024.11.6" \
+  "requests==2.32.4" \
+  "rpds-py==0.26.0" \
+  "safetensors==0.5.3" \
+  "scipy==1.13.1" \
+  "sentencepiece==0.2.0" \
+  "sentry-sdk==2.32.0" \
+  "starlette==0.46.2" \
+  "tiktoken==0.9.0" \
+  "tokenizers==0.21.2" \
+  "typer==0.16.0" \
+  "typer-slim==0.16.0" \
+  "uvicorn==0.35.0" \
+  "uvloop==0.21.0" \
+  "wandb==0.21.0" \
+  "watchfiles==1.1.0" \
+  "wcwidth==0.2.13" \
+  "wrapt==1.17.2" \
+  "xxhash==3.5.0" \
+  "yarl==1.20.1"
+
+
+### Retriever
+# 1) 卸载第二个环境里多出来的包
+python -m pip uninstall -y pydantic-extra-types
+
+# 2) 依赖敏感顺序固定版本（避免连锁升级）
+#    说明：
+#    - 先固定 llvmlite / numba 这对强耦合组合
+#    - 再装构建相关与低层依赖（pybind11 / orjson / msgpack 等）
+#    - 再装 matplotlib 相关栈（kiwisolver / fonttools / pyparsing / matplotlib-inline / matplotlib）
+#    - 然后是 Jupyter/终端相关（parso / prompt_toolkit / wcwidth / pyzmq）
+#    - 再装网络/系统类（frozenlist / multidict / psutil / platformdirs）
+#    - 最后是大件（ray / accelerate / wandb / sentry-sdk / 其余散件）
+#    - 全部使用 --no-deps，防止 pip 拉起“更新链”把别的包又升回去
+
+python -m pip install --no-deps --force-reinstall llvmlite==0.44.0
