@@ -17,6 +17,68 @@ logger = logging.getLogger(__name__)
 # ------------------ RIND 计算配置 ------------------
 ALLOWED_POS = {'NOUN', 'ADJ', 'VERB', 'PROPN', 'NUM'}
 
+# ★ FIX: 引入与代码2一致的空白与标签正则 -----------------------
+_WHITESPACE_MARKERS = {
+    "\u2581": " ",   # SentencePiece/Metaspace
+    "\u0120": " ",   # Byte BPE leading space
+    "\u010A": "\n",  # Byte BPE newline
+}
+CLOSE_TAG_RE = re.compile(
+    r"^\s*(?:</(?:think|answer|search|information)>)\s*$",
+    re.IGNORECASE,
+)
+LEADING_CLOSE_RE = re.compile(
+    r"^\s*(?:</(?:think|answer|search|information)>\s*)+",
+    re.IGNORECASE,
+)
+TAG_BOUNDARY_RE = re.compile(
+    r"(</(?:think|answer|search|information)>)|(<\s*(?:search|answer|information)\s*>)",
+    re.IGNORECASE,
+)
+SEARCH_TAG_RE = re.compile(r"<\s*search\s*>", re.IGNORECASE)
+ANSWER_TAG_RE = re.compile(r"<\s*answer\s*>", re.IGNORECASE)
+TERMINAL_MARKERS = ("<|im_end|>", "<|endoftext|>")
+# ---------------------------------------------------
+
+# ★ FIX: 与代码2一致的规范化与offset构建 -------------------------
+def _normalize_piece(piece: str) -> str:
+    for k, v in _WHITESPACE_MARKERS.items():
+        piece = piece.replace(k, v)
+    piece = re.sub(r"[ \t]+", " ", piece)
+    return piece if piece.strip() == "" else piece.strip()
+
+def build_offsets_from_ids(tokenizer, ids):
+    """从生成的 token ids 反推文本与字符偏移，避免重分词错位。"""
+    if ids is None:
+        return "", []
+    if isinstance(ids, torch.Tensor):
+        ids = ids.tolist()
+    # 过滤非法id
+    ids = [int(t) for t in ids if t is not None and t != -100]
+    if not ids:
+        return "", []
+
+    pieces = tokenizer.convert_ids_to_tokens(ids) or []
+    pieces = [p for p in pieces if p is not None]
+    if not pieces:
+        return "", []
+
+    resp_text = tokenizer.convert_tokens_to_string(pieces)
+    offsets = []
+    cursor = 0
+    for tok in pieces:
+        seg = tokenizer.convert_tokens_to_string([tok])
+        seg = _normalize_piece(seg)
+        idx = resp_text.find(seg, cursor)
+        if idx == -1:
+            idx = cursor
+        start = idx
+        end = start + len(seg)
+        offsets.append((start, end))
+        cursor = end
+    return resp_text, offsets
+# ---------------------------------------------------
+
 class RINDCalculator:
     def __init__(self, model, tokenizer):
         self.model = model
@@ -60,11 +122,9 @@ class RINDCalculator:
         gen_len = len(generated_tokens_ids)
         
         # 2. 复用生成过程的scores计算熵
-        # 提取生成步骤的logits
         scores = generation_outputs.scores  # 元组，每个元素是(1, vocab_size)的tensor
         all_logits = torch.stack(scores, dim=1).squeeze(0).cpu().numpy()  # (gen_len, vocab_size)
         
-        # 计算每个位置的熵
         entropies = []
         for i in range(gen_len):
             probs = softmax(all_logits[i])
@@ -83,18 +143,14 @@ class RINDCalculator:
         
         # 5. 聚合注意力
         if solver == "max":
-            # 每个头取最大 -> 头维度取平均
             head_max, _ = torch.max(last_layer_attn, dim=1)  # [num_heads, seq_len]
             mean_atten = torch.mean(head_max, dim=0)  # [seq_len]
         elif solver == "avg":
-            # 每个头求和 -> 头维度取平均
             head_sum = torch.sum(last_layer_attn, dim=1)  # [num_heads, seq_len]
             mean_atten = torch.mean(head_sum, dim=0)  # [seq_len]     
-            # 特殊归一化
             for i in range(seq_len):
                 mean_atten[i] /= (seq_len - i)
         elif solver == "last_token":
-            # 只取最后一个token的注意力
             mean_atten = torch.mean(last_layer_attn[:, -1], dim=0)  # [seq_len]
         else:
             raise ValueError(f"Unknown solver: {solver}")
@@ -112,51 +168,32 @@ class RINDCalculator:
         for (start, end) in spans:
             L = end - start + 1
             
-            # 定义高频前缀和后缀
             common_prefixes = {'un', 're', 'in', 'im', 'dis', 'non', 'pre', 'mis', 'sub', 'inter', 'trans'}
             common_suffixes = {'ing', 'ed', 'ly', 'ion', 'able', 'ness', 'ment', 'ful', 'less', 'est', 'ous', 'ive', 's', 'es'}
 
-            # 构造当前span对应的单词
             word = ''.join(gen_tokens[start:end+1]).replace(self.space_token, '')
-            
-            # 标点计数
             punct_count = sum(1 for tok in gen_tokens[start:end+1] if not tok.isalpha() and not tok.isalnum())
-            
-            # 前缀/后缀计数
             prefix_count = 1 if any(word.lower().startswith(p) for p in common_prefixes) else 0
             suffix_count = 1 if any(word.lower().endswith(s) for s in common_suffixes) else 0
-
-            # 有效长度
             L_eff = max(1, L - punct_count - prefix_count - suffix_count)
             
-            # 注意力值
             attn_vals = mean_atten[start:end+1].tolist()
             attn_sum = sum(attn_vals)
             if attn_sum > 0:
                 attn_vals = [v / attn_sum for v in attn_vals]
             else:
                 attn_vals = [0.0] * len(attn_vals)
-                
             max_attn = max(attn_vals) if attn_vals else 0.0
             
-            # 熵值
             if self.method == "dragin":
                 weight_vals = entropies[start:end+1]
             else:
-                # 对于attn_prob方法，这里需要计算对数概率
-                # 简化处理，使用固定值
                 weight_vals = [1.0] * L
-                
-            # 计算span平均熵
             span_ent = sum(weight_vals) / L
             
-            # 语义指示器
             s = self.is_content_word(word)
-            
-            # 计算RIND (严格遵循原始公式)
             rind = max_attn * span_ent * s * L_eff
             
-            # 记录结果
             pos_tag = self.nlp(word)[0].pos_ if len(self.nlp(word)) > 0 else ""
             rind_list.append((word, rind, max_attn, span_ent, L_eff, pos_tag))
             
@@ -167,10 +204,10 @@ question = "Mike Barnett negotiated many contracts including which player that w
 question = "Who was Ph.D. advisor of Yue Lu from UCR?"
 #question = "Which Chinese city held the Olympic Games?"
 #question = "Which city is the capital of the United Kingdom?"
+
 # 模型路径
 model_id = "/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/nq_search-r1-ppo-qwen2.5-3b-it-em-format-retrieval/actor/global_step_100"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 question = question.strip()
 if question[-1] != '?':
@@ -294,33 +331,64 @@ while True:
         print(f"{word:<15}{rind:<10.4f}{attn:<10.4f}{ent:<10.4f}{tok_num:<10}{pos}")
     print("="*50 + "\n")
     
-    #####
-    # 奖励计算
-    #####
+    ##### 奖励计算（严格对齐代码2） ################################
     THETA = 1.2
-    resp_text = output_text
 
-    # 1. 用 spaCy 切分句子
+    # ★ FIX: 使用 ids -> 文本 与 offsets 的单一来源，避免错位
+    resp_text, offsets = build_offsets_from_ids(tokenizer, generated_tokens)
+
+    # ★ FIX: 按标签边界细分句子段（而非简单字符串分句）
     doc = rind_calculator.nlp(resp_text)
-    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
-    '''
-    # ★ MOD: 合并因换行/引号被误分的片段
-    merged_sents = []  # ★ MOD
-    i = 0              # ★ MOD
-    while i < len(sentences):  # ★ MOD
-        s = sentences[i]       # ★ MOD
-        # 如果这一句**不**以 . ! ?（可选"）结尾，且后面还有句子，就合并
-        if not re.search(r'[\.!?。！？]"?$', s) and i + 1 < len(sentences):  # ★ MOD
-            s = s + ' ' + sentences[i+1]  # ★ MOD
-            i += 2                         # ★ MOD
-        else:
-            i += 1                         # ★ MOD
-        merged_sents.append(s)            # ★ MOD
-    sentences = merged_sents             # ★ MOD
-    '''
-    # 2. 记录 <search>…</search>、<information>…</information> 区块
+    raw_sents = [
+        (span.text, span.start_char, span.end_char)
+        for span in doc.sents
+        if span.text.strip()
+    ]
+
+    # ★ FIX: 在每个句子内部按 TAG_BOUNDARY_RE 切分，并处理句首连续关闭标签
+    sentences = []
+    for text, s, e in raw_sents:
+        parts = []
+        cur = 0
+        has_match = False
+        for m in TAG_BOUNDARY_RE.finditer(text):
+            has_match = True
+            if m.start() > cur:
+                parts.append((text[cur:m.start()], s + cur, s + m.start()))
+            parts.append((m.group(0), s + m.start(), s + m.end()))
+            cur = m.end()
+        if cur < len(text):
+            parts.append((text[cur:], s + cur, e))
+
+        if not has_match:
+            m = LEADING_CLOSE_RE.match(text)
+            if m:
+                close_part = text[: m.end()]
+                close_end = s + len(close_part)
+                if sentences:
+                    prev_text, prev_s, prev_e = sentences[-1]
+                    sentences[-1] = (prev_text + close_part, prev_s, close_end)
+                else:
+                    sentences.append((close_part, s, close_end))
+                if m.end() < len(text):
+                    sentences.append((text[m.end():], close_end, e))
+                continue
+
+        for seg_text, seg_s, seg_e in parts:
+            if not seg_text.strip():
+                continue
+            if CLOSE_TAG_RE.fullmatch(seg_text):
+                if sentences:
+                    prev_text, prev_s, prev_e = sentences[-1]
+                    sentences[-1] = (prev_text + seg_text, prev_s, seg_e)
+                else:
+                    sentences.append((seg_text, seg_s, seg_e))
+            else:
+                sentences.append((seg_text, seg_s, seg_e))
+
+    # ★ FIX: 仅把 <search>/<information>/<answer> 的成对区块做整体跳过
     skip_spans = []
-    for tag in ("search", "information", "answer"):  # ★ MOD: 加入 answer 区块
+    for tag in ("search", "information", "answer"):
         for m in re.finditer(fr"<{tag}>(.*?)</{tag}>", resp_text, re.DOTALL):
             skip_spans.append((m.start(), m.end()))
     skip_spans.sort()
@@ -332,55 +400,60 @@ while True:
             merged[-1][1] = max(merged[-1][1], e)
     skip_spans = merged
 
-    # ★ MOD: 3. 一次性获取 offset mapping，去掉 tok_strs
-    encoding = tokenizer(resp_text, return_offsets_mapping=True, add_special_tokens=False)  # ★ MOD
-    offsets = encoding["offset_mapping"]                                 # ★ MOD
+    rewards = []
+    L = len(generated_tokens)
 
-    # 4. 遍历句子
-    for sent in sentences:
-        start_pos = resp_text.find(sent)
-        end_pos = start_pos + len(sent)                                  
+    # ★ FIX: 遍历段落（非粗糙“整句”），并用 offsets → token 范围映射
+    for i, (sent_text, start_pos, end_pos) in enumerate(sentences):
+        sent = sent_text
 
-        # 跳过标签句子
-        if (any(f"<{tag}" in sent for tag in ("search","information","answer"))  # ★ MOD: 直接检查三类标签
-           or any(s <= start_pos < e for s, e in skip_spans)):                 # ★ MOD: 或落入 skip_spans
-            print(f"Skip tagged sentence:\n {sent} → reward = 0")
+        # 跳过：三类标签区块内/含三类标签自身/终止标记
+        if (any(f"<{tag}" in sent for tag in ("search", "information", "answer"))
+            or any(s <= start_pos < e for s, e in skip_spans)
+            or any(marker in sent for marker in TERMINAL_MARKERS)):
+            # print(f"Skip tagged sentence:\n {sent} -> reward 0")
             continue
 
-        # ★ MOD: 4.2 用 offsets 精确找本句的 token idx 区间
-        token_idxs = [i for i,(s,e) in enumerate(offsets) if s >= start_pos and e <= end_pos]  # ★ MOD
+        token_idxs = [idx for idx, (s, e) in enumerate(offsets) if 0 <= idx < L and s >= start_pos and e <= end_pos]
         if not token_idxs:
-            print(f"No tokens for sentence: {sent} → reward = 0")
+            # print(f"No tokens for sentence: {sent} -> reward 0")
             continue
 
-        # 取出对应的 token_ids 和 scores
-        sent_tok_ids = generated_tokens[token_idxs[0]: token_idxs[-1] + 1]
-        mini_scores   = outputs.scores[token_idxs[0]: token_idxs[-1] + 1]
+        start_idx, end_idx = token_idxs[0], token_idxs[-1]
+        start_idx = max(0, min(start_idx, L - 1))
+        end_idx = max(0, min(end_idx, L - 1))
+        if end_idx < start_idx:
+            continue
 
+        # 取出对应的 token_ids 和 scores（保持你原来的MiniOut调用方式）
+        sent_tok_ids = generated_tokens[start_idx: end_idx + 1]
+        mini_scores   = outputs.scores[start_idx: end_idx + 1]
 
         class MiniOut:
             def __init__(self, scores): self.scores = tuple(scores)
         mini_out = MiniOut(mini_scores)
 
-        # 4.3 计算 RIND 并求 M
+        # 计算 RIND 并求 M
         rind_list = rind_calculator.compute_rind_for_generation(
             mini_out,
             sent_tok_ids,
             solver='max'
         )
-        M = max(r for _, r, *_ in rind_list) if rind_list else 0.0
+        M = max((r for _, r, *_ in rind_list), default=0.0)
 
-        # 4.4 动作判定（保持原有逻辑）
-        tail = resp_text[end_pos:]
-        if re.match(r'\s*<search>', tail):
+        # ★ FIX: 动作判定前跨过所有纯关闭标签段
+        j = i + 1
+        while j < len(sentences) and CLOSE_TAG_RE.fullmatch(sentences[j][0]):
+            j += 1
+
+        if j < len(sentences) and SEARCH_TAG_RE.search(sentences[j][0]):
             action = "SEARCH"
-        elif re.match(r'\s*<answer>', tail):
+        elif j < len(sentences) and ANSWER_TAG_RE.search(sentences[j][0]):
             action = "ANSWER"
         else:
             action = "CONTINUE_THINK"
 
-
-        # 4.5 计算奖励（保持原有逻辑）
+        # 奖励
         if M > THETA:
             reward = +2 if action == "SEARCH" else -2
         else:
@@ -389,9 +462,9 @@ while True:
         print(f"Sentence:\n {sent}")
         print(f"  MaxRIND = {M:.4f}, Action = {action}, Reward = {reward}")
         print("-" * 40)
+        rewards.append((end_idx, reward))
+    ###############################################################
 
-        ####
-    
     # 更新完整上下文（用于日志等）
     full_context += output_text
     
