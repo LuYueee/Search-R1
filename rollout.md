@@ -1,3 +1,8 @@
+# Grounded-R1 Flowchart
+
+This diagram illustrates the four-phase rollout generation process of the Grounded-R1 framework.
+
+```mermaid
 flowchart TD
     Start[Input Question] --> LoopStart[Thinking Loop Initiation]
     
@@ -54,3 +59,13 @@ flowchart TD
     style ExternalKnowledge fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style KB fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,shape:cylinder
     style PolicyDecision fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+```
+
+## Diagram Description
+
+The flowchart depicts the following four-phase process:
+
+1. **Real-Time Hallucination Risk Sensing**: Computation of sentence-level hallucination risk using RHRD.
+2. **Adaptive Risk-Aware Decision**: Policy network selects from three actions based on risk assessment.
+3. **Evidence Retrieval and Buffer Augmentation**: External knowledge retrieval and evidence buffer updates.
+4. **Grounded Content Generation**: Final answer generation with evidence grounding.
