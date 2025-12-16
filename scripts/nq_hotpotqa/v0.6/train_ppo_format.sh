@@ -12,8 +12,8 @@ export WANDB_MODE=offline
 export RAY_memory_monitor_refresh_ms=0  # 保持禁用Ray内存监控
 export RAY_memory_usage_threshold=0.95  # 设置更高内存阈值
 export HYDRA_FULL_ERROR=1
-export BASE_MODEL=/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/v0.5-nq_search-r1-grpo-qwen2.5-3b-it-em-sfllm-semantic-score-format-retrieval-1004/actor/global_step_50
-export EXPERIMENT_NAME=${data_name}-r1-ppo-qwen2.5-3b-it-sent-rind-1121
+export BASE_MODEL=/home/jovyan/work_vol90/RL+RAG/Search-R1-main/verl_checkpoints/v0.5-nq_search-r1-ppo-qwen2.5-3b-it-em-sfllm-semantic-score-format-retrieval-0919/actor/global_step_100
+export EXPERIMENT_NAME=${data_name}-r1-ppo-qwen2.5-3b-it-sent-rind-1208
 
 #export BASE_MODEL='Qwen/Qwen2.5-3B'
 #export EXPERIMENT_NAME=${train_data}-${test_data}-search-r1-ppo-qwen2.5-3b-em-structureformat
