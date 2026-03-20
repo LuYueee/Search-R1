@@ -109,7 +109,17 @@ class RINDCalculator:
         """
         if attn_tensor is None or attn_tensor.numel() == 0 or attn_tensor.shape[1] == 0:
             return []
-        gen_tokens = self.tokenizer.convert_ids_to_tokens(generated_tokens_ids)
+        gen_tokens_raw = self.tokenizer.convert_ids_to_tokens(generated_tokens_ids)
+        if gen_tokens_raw is None:
+            raise RuntimeError(
+                "convert_ids_to_tokens returned None; check tokenizer or input ids."
+            )
+        # ``convert_ids_to_tokens`` can yield ``None`` for unknown/special tokens; replace
+        # them with empty strings so downstream span logic can safely call string methods.
+        gen_tokens = [tok if tok is not None else "" for tok in gen_tokens_raw]
+        assert len(gen_tokens) == len(
+            generated_tokens_ids
+        ), f"Token/text length mismatch: {len(gen_tokens)} vs {len(generated_tokens_ids)}"
         gen_len = len(generated_tokens_ids)
         attn_tensor = attn_tensor.float().cpu()
         entropies = list(entropies)
